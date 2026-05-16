@@ -14,8 +14,6 @@ lerna-debug.log*
 #
 # ignore folders - user specified
 #
-servers/
-node_modules/
 
 
 # Diagnostic reports (https://nodejs.org/api/report.html)

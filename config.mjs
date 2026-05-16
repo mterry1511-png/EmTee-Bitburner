@@ -7,28 +7,28 @@ const createContext = async () => await context({
     'servers/**/*.jsx',
     'servers/**/*.ts',
     'servers/**/*.tsx',
+    'servers/**/*.json',
   ],
   outbase: "./servers",
   outdir: "./build",
+  loader: {
+    '.json': 'copy'
+  },
+  plugins: [
+      BitburnerPlugin({
+        port: 12525,
+        types: 'NetscriptDefinitions.d.ts',
+        mirror: {
+        },
+        distribute: {
+        },
+      })
+    ],
+    bundle: true,
+    format: 'esm',
+    platform: 'browser',
+    logLevel: 'debug',
+  });
 
-
-  plugins:
-
-    [BitburnerPlugin({
-      port: 12525,
-      types: 'NetscriptDefinitions.d.ts',
-      // mirroring section - comment out if you don't want to mirror any files
-      // mirror: {
-      //   'local/path': ['home']
-      // }
-    })],
-
-  bundle: true,
-  format: 'esm',
-  platform: 'browser',
-  logLevel: 'info'
-}
-);
-
-let ctx = await createContext();
+const ctx = await createContext();
 ctx.watch();
