@@ -1,5 +1,5 @@
 /** @param {NS} ns */
-import { openPorts } from "./lib/util.js";
+import { autoNuke } from "./lib/util.js";
 export async function main(ns, newcloudname, targetserver) {
     const help = ns.args.includes("help");
     if (help) {
@@ -22,7 +22,7 @@ async function buy(ns, newcloudname, targetserver) {
         newcloudname = "cloud";
     }
     // Openports on targetserver, root needed for server purchase
-    openPorts(ns, targetserver);
+    await autoNuke(ns, targetserver);
     while (true) {
         // if we can't afford a server with double the RAM of last tested, buy it and end program 
         if (ns.cloud.getServerCost(affordableram * 2) > ns.getPlayer().money) {

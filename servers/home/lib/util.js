@@ -9,7 +9,7 @@ export async function main(ns) {
     ns.print(targetServer);
     //Determine function based on args
     if (openports) {
-        await openPorts(ns, targetServer);
+        autoNuke(ns, targetServer);
     }
     else if (getAvailableThreads) {
         const threads = getAvailableThreads(ns, targetServer);
@@ -29,7 +29,7 @@ function printusage(ns) {
     ns.tprint("  'help': Print this usage message");
 }
 // Open ports function
-export async function openPorts(ns, targetServer) {
+export function autoNuke(ns, targetServer) {
     //* Opens ports then grants root
     let runExes = [
         "BruteSSH.exe",
@@ -74,6 +74,7 @@ export async function openPorts(ns, targetServer) {
                 break;
         }
     }
+
     // Get root access to targetServer server if no root access
     if (!ns.hasRootAccess(targetServer)) {
         ns.nuke(targetServer);
@@ -82,12 +83,13 @@ export async function openPorts(ns, targetServer) {
     else {
         ns.print("Already had root");
     }
+
     // Print backdoor status of targetServer
     if (ns.getServer(targetServer).backdoorInstalled) {
-        ns.print("Backdoor Status = OPEN");
+        ns.print("Backdoor Status = OPEN \n \n");
     }
     else {
-        ns.print("Backdoor Status = CLOSED");
+        ns.print("Backdoor Status = CLOSED \n \n");
     }
 }
 // Get available threads function 

@@ -18,7 +18,7 @@ export async function main(ns) {
     // if running from cloud, start to loop
     else {
         // Automatically tail and disable logs
-        ns.ui.openTail();
+        // ns.ui.openTail();
         ns.disableLog("disableLog");
         ns.disableLog("scp");
         if (targetCloud === ns.getHostname()) {

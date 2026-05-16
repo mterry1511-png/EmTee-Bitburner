@@ -4,7 +4,7 @@
  * @param {number} moneyPercent
  * @param {number} minSecurityoffset
  * @param {boolean} debug*/
-import { openPorts } from "../lib/util.js";
+import { autoNuke } from "../lib/util.js";
 // Main
 export async function main(ns) {
     // Disable logging for ns functions
@@ -35,7 +35,7 @@ export async function main(ns) {
     // Defines the minimum security level the targetServer server can have. 
     const securityThresh = ns.getServerMinSecurityLevel(targetServer) + (ns.args[2] ?? 5);
     // Execute hacks once
-    await openPorts(ns, targetServer);
+    autoNuke(ns, targetServer);
     // Call infinite loop
     await loop(ns, targetServer, moneyThresh, securityThresh, debug);
 }
