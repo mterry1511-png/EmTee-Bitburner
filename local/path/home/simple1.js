@@ -4,7 +4,7 @@
  * @param {number} moneyPercent
  * @param {number} minSecurityoffset
  * @param {boolean} debug*/
-import { openPorts } from "./lib/util.js";
+import { openPorts } from "./util.js";
 // Main
 export async function main(ns) {
     // Disable logging for ns functions

@@ -1,4 +1,4 @@
-/** @param {NS} ns */ 
+/** @param {NS} ns */
 export async function main(ns) {
     var target = ns.args[0];
     var maxseclevel = ns.getServerMinSecurityLevel(target) + 5;
