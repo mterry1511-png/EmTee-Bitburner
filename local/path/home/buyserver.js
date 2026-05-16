@@ -1,5 +1,5 @@
 /** @param {NS} ns */
-import { openPorts } from "./util.js";
+import { openPorts } from "./lib/util.js";
 export async function main(ns, newcloudname, targetserver) {
     const help = ns.args.includes("help");
     if (help) {

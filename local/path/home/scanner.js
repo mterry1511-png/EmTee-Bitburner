@@ -65,7 +65,7 @@ export function scanNetwork(ns) {
         });
     }
     // Then write the custom networks array to networks.json // Overwrites the json completely
-    ns.write("networks.json", JSON.stringify(networks), "w");
+    ns.write("./data/networks.json", JSON.stringify(networks), "w");
     //print all to log for fun
     for (const n in networks) {
         ns.print(networks[n], "\n \n");
