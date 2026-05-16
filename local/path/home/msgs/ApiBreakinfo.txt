@@ -1,0 +1,87 @@
+API BREAK INFO FOR 3.0.0
+
+You cannot use the deprecated VSCode extension to connect to the Steam app via API server now. You have to use Remote API to connect your external editors to Bitburner.
+For more information, please check the Remote API page in the Documentation tab. If you have a question, please ask us on #external-editors on Discord (https://discord.gg/TFc3hKD).
+
+
+
+With some APIs, when you passed values to their params, you could pass a value that was not an exact match. For example, with ns.singularity.commitCrime, you could pass "Rob Store", "rob store", "RobStore", "robstore", "robStore", etc. This is called "fuzzy matching". Now, you must pass an exact value (i.e., Rob Store). This change affects:
+- Bladeburner action and type: BladeburnerActionType, BladeburnerGeneralActionName, BladeburnerContractName, BladeburnerOperationName, BladeburnerBlackOpName, SpecialBladeburnerActionTypeForSleeve, BladeburnerActionTypeForSleeve.
+- Crime: CrimeType
+- Faction work: FactionWorkType
+- University class: UniversityClassType
+- Gym stat: GymType
+- Job field: JobField
+- Stock position: PositionType
+- Stock order: OrderType
+You can access these values via ns.enums and Bladeburner APIs.
+
+
+
+Some APIs returned a default value when you passed the hostname of a non-hackable server (e.g., hacknet server) to them.
+These APIs now throw an error. The affected APIs are:
+- ns.hackAnalyzeThreads
+- ns.hackAnalyze
+- ns.hackAnalyzeSecurity
+- ns.hackAnalyzeChance
+- ns.growthAnalyze
+- ns.growthAnalyzeSecurity
+- ns.nuke
+- ns.brutessh
+- ns.ftpcrack
+- ns.relaysmtp
+- ns.httpworm
+- ns.sqlinject
+- ns.getServerMoneyAvailable
+- ns.getServerSecurityLevel
+- ns.getServerBaseSecurityLevel
+- ns.getServerMinSecurityLevel
+- ns.getServerRequiredHackingLevel
+- ns.getServerMaxMoney
+- ns.getServerGrowth
+- ns.getServerNumPortsRequired
+- ns.cloud.deleteServer
+- ns.getHackTime
+- ns.getGrowTime
+- ns.getWeakenTime
+
+
+Usage of the following functions may have been affected:
+ns.hackAnalyzeThreads
+ns.hackAnalyze
+ns.hackAnalyzeSecurity
+ns.hackAnalyzeChance
+ns.growthAnalyze
+ns.growthAnalyzeSecurity
+ns.nuke
+ns.brutessh
+ns.ftpcrack
+ns.relaysmtp
+ns.httpworm
+ns.sqlinject
+ns.getServerMoneyAvailable
+ns.getServerSecurityLevel
+ns.getServerBaseSecurityLevel
+ns.getServerMinSecurityLevel
+ns.getServerRequiredHackingLevel
+ns.getServerMaxMoney
+ns.getServerGrowth
+ns.getServerNumPortsRequired
+ns.deleteServer
+ns.getHackTime
+ns.getGrowTime
+ns.getWeakenTime
+
+Potentially affected files on server home (with line numbers):
+runes.js: (Line numbers: 4, 5, 16, 19)
+drain.js: (Line numbers: 7, 7, 10, 10)
+
+Potentially affected files on server n00dles (with line numbers):
+runes.js: (Line numbers: 4, 5, 16, 19)
+
+
+
+We added a new feature called Dark Net. The "darkweb" server is a darknet server now.
+Some APIs that require the target host to be a normal server do not work with darkweb. This should not be a 
+problem with most scripts. The most potentially affected API is "ns.scan()". Darkweb does not appear in the 
+result of this API anymore. If you want to find darknet servers, you need to use "ns.dnet.probe()".
