@@ -2,5 +2,14 @@
     "cloudpushSleep": 5000,
     "securityThresh": 5,
     "moneyThresh": 0.75,
-    "networkmapped": false
+    "networkmapped": false,
+    "targetRequirements": {
+        "minHackChance": 0.75,
+        "minMoney": 1000000,
+        "minServerGrowth": 10,
+        "excludeServers": [
+            "home",
+            "cloud"
+        ]
+    }
 }
