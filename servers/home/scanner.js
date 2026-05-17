@@ -8,6 +8,11 @@ export function scanNetwork(ns, quiet = false) {
     // set silent if -q specified
     quiet = quiet || ns.args.includes("-q");
 
+    // Disable log output if quiet
+    if (quiet){
+        ns.disableLog("ALL");
+    }
+
     // printusage  if "help" is included in args
     if (ns.args.includes("help")) {
         printusage(ns);
@@ -44,7 +49,7 @@ export function scanNetwork(ns, quiet = false) {
     let networks = [];
     // for each server, append a new object to networks
     for (const server of allServers) {
-        networks = ns.getServer(server)
+        networks.push(ns.getServer(server));
         // alternative for pushing specific values
         // const data = ns.getServer(server);
         // networks.push({

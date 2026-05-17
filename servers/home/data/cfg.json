@@ -1,5 +1,5 @@
 {
-    "cloudpushSleep": 5000,
+    "cloudPushSleep": 5000,
     "securityThresh": 5,
     "moneyThresh": 0.75,
     "networkmapped": false,
@@ -11,5 +11,6 @@
             "home",
             "cloud"
         ]
-    }
+    },
+    "serverRefresh": 10000
 }

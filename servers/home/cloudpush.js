@@ -25,8 +25,8 @@ export async function main(ns) {
             // Loop if ran from the cloud targetCloud, pushing updates from home at the interval defined in cfg.json
             while (true) {
                 await pushScripts(ns, targetCloud);
-                const cloudpushSleep = JSON.parse(ns.read("cfg.json")).cloudpushSleep ?? 5000;
-                await ns.sleep(cloudpushSleep);
+                const cloudPushSleep = JSON.parse(ns.read("cfg.json")).cloudPushSleep ?? 5000;
+                await ns.sleep(cloudPushSleep);
             }
         }
     }
