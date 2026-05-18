@@ -1,3 +1,21 @@
+https://github.com/mterry1511-png/EmTee-Bitburner.git
+
+
+	update clone
+git pull origin main
+
+	Commit after done with edits: 
+git add .
+git commit -m "comment for commit"
+git push origin main
+
+
+
+
+	clone repo (first time)
+git clone <repo-url>
+
+
 Check the Current Repository Status
 git status
 
