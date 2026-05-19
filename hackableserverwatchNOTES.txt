@@ -1,0 +1,1 @@
+a log window that tracks which servers are being exploited and which aren't - updates as hack skill progress

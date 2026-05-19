@@ -1,0 +1,102 @@
+1.
+2.
+3.
+4.
+5.
+6.
+7.
+8.
+9.
+10.
+11.
+12.
+13.
+14.
+15.
+16.
+17.
+18.
+19.
+20.
+
+
+
+
+AI Summary
+    In Bitburner, ports are one of the most important communication mechanisms between scripts. They act like numbered mailboxes that let one script send data to another without directly sharing variables.
+
+    If you understand ports well, you can build:
+
+    Centralized managers
+    Worker scripts
+    Event queues
+    Logging systems
+    Job schedulers
+    Distributed hacking networks
+    1. What Are Ports?
+
+    Bitburner provides 20 global ports, numbered:
+
+    1 through 20
+
+    Each port is a FIFO queue (First-In, First-Out).
+
+    Think of each port as a pipe:
+
+    Script A --> Port 1 --> Script B
+
+    One script writes data, another reads it.
+
+    Ports persist until:
+
+    Data is removed
+    You clear the port
+    You reload the game
+    2. Real-World Analogy
+
+    Imagine 20 shared inboxes.
+
+    Port 1 = hacking jobs
+    Port 2 = status updates
+    Port 3 = logs
+    Port 4 = money tracker
+
+    Any script can access them.
+
+    3. Basic Functions
+    Write to a Port
+    ns.writePort(port, data);
+
+    Adds data to the end of the queue.
+
+    Read from a Port
+        ns.readPort(port);
+
+    Removes and returns the oldest item.
+
+    Peek at a Port
+        ns.peek(port);
+
+    Returns oldest item without removing it.
+
+    Clear a Port
+        ns.clearPort(port);
+
+    Deletes all data.
+
+    Check if Empty
+        ns.peek(port) === "NULL PORT DATA"
+
+    4. Example
+    Writer
+        /** @param {NS} ns **/
+        export async function main(ns) {
+            ns.writePort(1, "hello");
+        }
+        
+    Reader
+        /** @param {NS} ns **/
+        export async function main(ns) {
+            const data = ns.readPort(1);
+            ns.tprint(data); // hello
+        }

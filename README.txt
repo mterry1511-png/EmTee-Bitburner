@@ -1,10 +1,9 @@
-EmTee's Bitburner code
+EmTee's Bitburner 0.43
+targeting.js complete - needs testing
+
+
 Next up:
     deployer script 
-    
-    
-
-getTarget(ns, args = ns.args) will be the new exported function
-getBestTarget will be replaced, not preserved as a wrapper
---hacklvl support remains via args parsing
-util.js comments will be updated to match the new API
+     
+    util.js:
+    util.js comments will be updated to match the new API
