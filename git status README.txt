@@ -7,7 +7,7 @@ git pull origin main
 	Commit after done with edits: 
 git add .
 git commit -m "comment for commit"
-git push origin main
+git push origin
 
 
 

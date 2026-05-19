@@ -32,7 +32,7 @@ export async function main(ns) {
     // Refresh "/data/networks.json"
     scanNetwork(ns, true);
 
-    // exec servWatch - refreshes ./data/networks.json regularly
+   
 
     // exec buyRAM
 
@@ -42,24 +42,353 @@ export async function main(ns) {
 
     // exec buyAugments
 
-    //exec buyTor and programs (SINGULARITY)
+    // exec buyTor and programs (SINGULARITY)
 
-    //printResults(ns, results);
+     // exec watch
 
-    function printResults(ns, results) {
-        // check results and print accordingly (NEED TO DEFINE)
-        // Consider putting all watch into a single watch.js?
+    // printResults(ns, results);
+
+}
+
+
+function printResults(ns, results) {
+    // check results and print accordingly (NEED TO DEFINE)
+    // Consider putting all watch into a single watch.js?
+
+    // Fun little countdown nonsense
+    nonsense(ns);
+
+    // Print results
+    ns.ui.clearTerminal();
+    ns.tprint("\n\nInitialisation:\n");
+    ns.tprint("  Network mapped and stored in ./data/networks.json\n");
+    ns.tprint("  AutoNuked all servers\n");
+    // ns.tprint("  Executed servWatch for automated nuking\n");
+    // ns.tprint("  Executed ramWatch for automated RAM purchasing\n");
+    // ns.tprint("  Executed hacknetWatch for automated hacknet purchasing \n");
+    // ns.tprint("  Executed augWatch for automated augmentation purchasing \n");
+    // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
+    ns.tprint("\n\n");
+}
+
+/** @param {NS} ns */
+async function nonsense(ns) {
+    // Just for fun / flavour.
+    // Displays Matrix-style glitch text in the TERMINAL for ~4 seconds,
+    // then clears the terminal and performs a dramatic countdown.
+
+    const chars =
+        "01アイウエオABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+        "abcdefghijklmnopqrstuvwxyz" +
+        "!@#$%^&*()[]{}<>?/\\|~`+-=_";
+
+    const width = 72;
+    const height = 18;
+    const frameDelay = 80;      // ms
+    const totalDuration = 4000; // 4 seconds
+
+    /**
+     * Print a line to terminal.
+     */
+    function term(text = "") {
+        ns.tprint(text);
+    }
+
+    /**
+     * Clear the terminal.
+     */
+    function cls() {
         ns.ui.clearTerminal();
-        ns.tprint("\n\nInitialisation:\n");
-        ns.tprint("  Network mapped and stored in ./data/networks.json\n");
-        ns.tprint("  AutoNuked all servers\n");
-        // ns.tprint("  Executed servWatch for automated nuking\n");
-        // ns.tprint("  Executed ramWatch for automated RAM purchasing\n");
-        // ns.tprint("  Executed hacknetWatch for automated hacknet purchasing \n");
-        // ns.tprint("  Executed augWatch for automated augmentation purchasing \n");
-        // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
-        ns.tprint("\n\n");
+    }
+
+    /**
+     * Random integer between min and max inclusive.
+     */
+    function randInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+    }
+
+    /**
+     * Random character from chars.
+     */
+    function randChar() {
+        return chars[randInt(0, chars.length - 1)];
+    }
+
+    /**
+     * Generate one line of random characters.
+     */
+    function randomLine() {
+        let line = "";
+        for (let i = 0; i < width; i++) {
+            line += randChar();
+        }
+        return line;
+    }
+
+    /**
+     * Generate a full glitch frame.
+     */
+    function generateFrame() {
+        const lines = [];
+
+        for (let i = 0; i < height; i++) {
+            lines.push(randomLine());
+        }
+
+        const messages = [
+            ">>> ESTABLISHING NEURAL LINK...",
+            ">>> DECRYPTING NEXUS...",
+            ">>> ROOT ACCESS GRANTED",
+            ">>> SYNCHRONIZING DAEMONS...",
+            ">>> WAKING SLEEPER AGENTS...",
+            ">>> REALITY.EXE NOT FOUND",
+            ">>> SYSTEM INTEGRITY: [██████████] 100%",
+            ">>> WELCOME BACK, OPERATOR",
+            ">>> JACKING INTO THE MAINFRAME...",
+            ">>> WAKE UP, MATTHEW...",
+        ];
+
+        if (Math.random() < 0.7) {
+            const lineIndex = randInt(0, height - 1);
+            lines[lineIndex] = messages[randInt(0, messages.length - 1)];
+        }
+
+        return lines.join("\n");
+    }
+
+    // Show glitch animation
+    const start = Date.now();
+
+    while (Date.now() - start < totalDuration) {
+        cls();
+        term(generateFrame());
+        await ns.sleep(frameDelay);
+    }
+
+    // Dramatic pause
+    cls();
+    await ns.sleep(3000);
+
+    // Countdown
+    for (const n of [3, 2, 1]) {
+        term(`........${n}`);
+        await ns.sleep(1000);
+        cls();
+    }
+
+    // Initialised
+    term("Initialised");
+    await ns.sleep(1000);
+
+    // Add dots
+    for (let i = 0; i < 4; i++) {
+        term(".");
+        await ns.sleep(1000);
     }
 
 }
 
+
+
+
+
+
+/** @param {NS} ns */
+async function nonsense2(ns) {
+    // Ultra-dramatic cyberpunk boot sequence for Bitburner terminal.
+
+    const chars =
+        "01アイウエオカキクケコサシスセソABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+        "abcdefghijklmnopqrstuvwxyz" +
+        "░▒▓█<>[]{}()/\\|!?@#$%^&*~`+-=_";
+
+    const width = 78;
+    const height = 20;
+
+    const messages = [
+        ">>> ESTABLISHING NEURAL LINK...",
+        ">>> DECRYPTING BLACK ICE...",
+        ">>> BYPASSING INTRUSION COUNTERMEASURES...",
+        ">>> ROOT ACCESS GRANTED",
+        ">>> LOADING COGNITIVE SUBROUTINES...",
+        ">>> SPOOFING BIOMETRIC SIGNATURE...",
+        ">>> WAKE UP, OPERATOR",
+        ">>> REALITY.EXE HAS CRASHED",
+        ">>> THE MATRIX HAS YOU...",
+        ">>> NO GODS. NO KINGS. ONLY ROOT.",
+        ">>> JACKING INTO THE MAINFRAME...",
+        ">>> INITIATING QUANTUM HANDSHAKE...",
+        ">>> MEMORY FIREWALL DISABLED",
+        ">>> DAEMONS AWAKENING...",
+        ">>> SYSTEM INTEGRITY: [██████████] 100%",
+    ];
+
+    // -----------------------------
+    // Helper functions
+    // -----------------------------
+    const cls = () => ns.ui.clearTerminal();
+    const term = (text = "") => ns.tprint(text);
+
+    const randInt = (min, max) =>
+        Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const randChoice = (arr) => arr[randInt(0, arr.length - 1)];
+
+    const randChar = () => chars[randInt(0, chars.length - 1)];
+
+    function randomLine() {
+        let line = "";
+        for (let i = 0; i < width; i++) {
+            line += randChar();
+        }
+        return line;
+    }
+
+    function randomFrame() {
+        const lines = [];
+
+        for (let i = 0; i < height; i++) {
+            lines.push(randomLine());
+        }
+
+        // Inject 1–3 messages
+        const injections = randInt(1, 3);
+        for (let i = 0; i < injections; i++) {
+            lines[randInt(0, height - 1)] = randChoice(messages);
+        }
+
+        return lines.join("\n");
+    }
+
+    async function typeLine(text, delay = 30) {
+        let current = "";
+        for (const ch of text) {
+            current += ch;
+            cls();
+            term(current + "█");
+            await ns.sleep(delay);
+        }
+        cls();
+        term(text);
+    }
+
+    async function fakeProgress(label, duration = 2000) {
+        const steps = 25;
+        for (let i = 0; i <= steps; i++) {
+            const filled = "█".repeat(i);
+            const empty = "░".repeat(steps - i);
+            const percent = String(Math.floor((i / steps) * 100)).padStart(3);
+            cls();
+            term(`${label}`);
+            term(`[${filled}${empty}] ${percent}%`);
+            await ns.sleep(duration / steps);
+        }
+    }
+
+    async function flash(text, times = 4, delay = 120) {
+        for (let i = 0; i < times; i++) {
+            cls();
+            if (i % 2 === 0) term(text);
+            await ns.sleep(delay);
+        }
+    }
+
+    // -----------------------------
+    // Phase 1: Initial corruption
+    // -----------------------------
+    const start = Date.now();
+    while (Date.now() - start < 4000) {
+        cls();
+        term(randomFrame());
+        await ns.sleep(60);
+    }
+
+    // -----------------------------
+    // Phase 2: Warning flashes
+    // -----------------------------
+    await flash("!! SIGNAL ACQUIRED !!", 6);
+    await flash("!! UNAUTHORIZED ACCESS DETECTED !!", 6);
+
+    // -----------------------------
+    // Phase 3: Typewriter messages
+    // -----------------------------
+    await typeLine("Establishing encrypted uplink...");
+    await ns.sleep(500);
+
+    await typeLine("Injecting daemons into target memory...");
+    await ns.sleep(500);
+
+    await typeLine("Bypassing black ICE...");
+    await ns.sleep(500);
+
+    // -----------------------------
+    // Phase 4: Progress bars
+    // -----------------------------
+    await fakeProgress("Decrypting secure channels...");
+    await fakeProgress("Loading autonomous agents...");
+    await fakeProgress("Synchronising botnet...");
+
+    // -----------------------------
+    // Phase 5: Countdown
+    // -----------------------------
+    cls();
+    await ns.sleep(800);
+
+    for (const n of [3, 2, 1]) {
+        cls();
+        term(`
+ ███████╗
+ ╚══${n}══╝
+        `);
+        await ns.sleep(1000);
+    }
+
+    // -----------------------------
+    // Phase 6: Final reveal
+    // -----------------------------
+    cls();
+    term(`
+██╗███╗   ██╗██╗████████╗
+██║████╗  ██║██║╚══██╔══╝
+██║██╔██╗ ██║██║   ██║
+██║██║╚██╗██║██║   ██║
+██║██║ ╚████║██║   ██║
+╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝
+
+██╗ █████╗ ██╗     ██╗███████╗███████╗██████╗
+██║██╔══██╗██║     ██║╚══███╔╝██╔════╝██╔══██╗
+██║███████║██║     ██║  ███╔╝ █████╗  ██║  ██║
+██║██╔══██║██║     ██║ ███╔╝  ██╔══╝  ██║  ██║
+██║██║  ██║███████╗██║███████╗███████╗██████╔╝
+╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝╚═════╝
+`);
+
+    await ns.sleep(2500);
+
+    // -----------------------------
+    // Phase 7: Dramatic countdown
+    // -----------------------------
+
+    // Dramatic pause
+    cls();
+    await ns.sleep(3000);
+
+    // Countdown
+    for (const n of [3, 2, 1]) {
+        term(`........${n}`);
+        await ns.sleep(1000);
+        cls();
+    }
+
+    // Initialised
+    term("Initialised");
+    await ns.sleep(1000);
+
+    // Add dots
+    for (let i = 0; i < 4; i++) {
+        term(".");
+        await ns.sleep(1000);
+    }
+
+}

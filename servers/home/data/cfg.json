@@ -12,5 +12,13 @@
             "cloud"
         ]
     },
-    "serverRefresh": 10000
+    "serverRefresh": 10000,
+    "purchaseConfig": {
+        "maxPercSpend": 40,
+        "mincloudRAM": 1024,
+        "targetCloudServs": 5,
+        "hardwareStores": [
+            "alphaent"
+        ]
+    }
 }
