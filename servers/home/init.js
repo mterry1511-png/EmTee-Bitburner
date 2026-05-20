@@ -6,14 +6,14 @@ import { autoNuke } from "./lib/util.js";
 export async function main(ns) {
 
     // Disable logging for ns functions
-    ns.disableLog("disableLog");
-    ns.disableLog("scan");
-    ns.disableLog("getServerRequiredHackingLevel");
-    ns.disableLog("getServerSecurityLevel");
-    ns.disableLog("getServerMoneyAvailable");
-    ns.disableLog("getServerMaxMoney");
-    ns.disableLog("getServerMinSecurityLevel");
-    ns.disableLog("getHostname");
+    // ns.disableLog("disableLog");
+    // ns.disableLog("scan");
+    // ns.disableLog("getServerRequiredHackingLevel");
+    // ns.disableLog("getServerSecurityLevel");
+    // ns.disableLog("getServerMoneyAvailable");
+    // ns.disableLog("getServerMaxMoney");
+    // ns.disableLog("getServerMinSecurityLevel");
+    // ns.disableLog("getHostname");
 
     // import config file
     const cfg = JSON.parse(ns.read("./data/cfg.json"));
@@ -30,9 +30,7 @@ export async function main(ns) {
     }
 
     // Refresh "/data/networks.json"
-    scanNetwork(ns, true);
-
-   
+    await scanNetwork(ns, true);
 
     // exec buyRAM
 
@@ -44,22 +42,28 @@ export async function main(ns) {
 
     // exec buyTor and programs (SINGULARITY)
 
-     // exec watch
+    // exec watch
 
-    // printResults(ns, results);
 
+
+    // DEBUG
+    const results = []
+    // DEBUG
+
+
+
+    await printResults(ns, results);
 }
 
 
-function printResults(ns, results) {
+async function printResults(ns, results) {
     // check results and print accordingly (NEED TO DEFINE)
     // Consider putting all watch into a single watch.js?
 
     // Fun little countdown nonsense
-    nonsense(ns);
+    await nonsense2(ns);
 
     // Print results
-    ns.ui.clearTerminal();
     ns.tprint("\n\nInitialisation:\n");
     ns.tprint("  Network mapped and stored in ./data/networks.json\n");
     ns.tprint("  AutoNuked all servers\n");
@@ -70,128 +74,6 @@ function printResults(ns, results) {
     // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
     ns.tprint("\n\n");
 }
-
-/** @param {NS} ns */
-async function nonsense(ns) {
-    // Just for fun / flavour.
-    // Displays Matrix-style glitch text in the TERMINAL for ~4 seconds,
-    // then clears the terminal and performs a dramatic countdown.
-
-    const chars =
-        "01アイウエオABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-        "abcdefghijklmnopqrstuvwxyz" +
-        "!@#$%^&*()[]{}<>?/\\|~`+-=_";
-
-    const width = 72;
-    const height = 18;
-    const frameDelay = 80;      // ms
-    const totalDuration = 4000; // 4 seconds
-
-    /**
-     * Print a line to terminal.
-     */
-    function term(text = "") {
-        ns.tprint(text);
-    }
-
-    /**
-     * Clear the terminal.
-     */
-    function cls() {
-        ns.ui.clearTerminal();
-    }
-
-    /**
-     * Random integer between min and max inclusive.
-     */
-    function randInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
-
-    /**
-     * Random character from chars.
-     */
-    function randChar() {
-        return chars[randInt(0, chars.length - 1)];
-    }
-
-    /**
-     * Generate one line of random characters.
-     */
-    function randomLine() {
-        let line = "";
-        for (let i = 0; i < width; i++) {
-            line += randChar();
-        }
-        return line;
-    }
-
-    /**
-     * Generate a full glitch frame.
-     */
-    function generateFrame() {
-        const lines = [];
-
-        for (let i = 0; i < height; i++) {
-            lines.push(randomLine());
-        }
-
-        const messages = [
-            ">>> ESTABLISHING NEURAL LINK...",
-            ">>> DECRYPTING NEXUS...",
-            ">>> ROOT ACCESS GRANTED",
-            ">>> SYNCHRONIZING DAEMONS...",
-            ">>> WAKING SLEEPER AGENTS...",
-            ">>> REALITY.EXE NOT FOUND",
-            ">>> SYSTEM INTEGRITY: [██████████] 100%",
-            ">>> WELCOME BACK, OPERATOR",
-            ">>> JACKING INTO THE MAINFRAME...",
-            ">>> WAKE UP, MATTHEW...",
-        ];
-
-        if (Math.random() < 0.7) {
-            const lineIndex = randInt(0, height - 1);
-            lines[lineIndex] = messages[randInt(0, messages.length - 1)];
-        }
-
-        return lines.join("\n");
-    }
-
-    // Show glitch animation
-    const start = Date.now();
-
-    while (Date.now() - start < totalDuration) {
-        cls();
-        term(generateFrame());
-        await ns.sleep(frameDelay);
-    }
-
-    // Dramatic pause
-    cls();
-    await ns.sleep(3000);
-
-    // Countdown
-    for (const n of [3, 2, 1]) {
-        term(`........${n}`);
-        await ns.sleep(1000);
-        cls();
-    }
-
-    // Initialised
-    term("Initialised");
-    await ns.sleep(1000);
-
-    // Add dots
-    for (let i = 0; i < 4; i++) {
-        term(".");
-        await ns.sleep(1000);
-    }
-
-}
-
-
-
-
 
 
 /** @param {NS} ns */
@@ -273,7 +155,7 @@ async function nonsense2(ns) {
         term(text);
     }
 
-    async function fakeProgress(label, duration = 2000) {
+    async function fakeProgress(label, duration = 300) {
         const steps = 25;
         for (let i = 0; i <= steps; i++) {
             const filled = "█".repeat(i);
@@ -288,7 +170,6 @@ async function nonsense2(ns) {
 
     async function flash(text, times = 4, delay = 120) {
         for (let i = 0; i < times; i++) {
-            cls();
             if (i % 2 === 0) term(text);
             await ns.sleep(delay);
         }
@@ -298,7 +179,7 @@ async function nonsense2(ns) {
     // Phase 1: Initial corruption
     // -----------------------------
     const start = Date.now();
-    while (Date.now() - start < 4000) {
+    while (Date.now() - start < 2000) {
         cls();
         term(randomFrame());
         await ns.sleep(60);
@@ -314,13 +195,13 @@ async function nonsense2(ns) {
     // Phase 3: Typewriter messages
     // -----------------------------
     await typeLine("Establishing encrypted uplink...");
-    await ns.sleep(500);
+    await ns.sleep(100);
 
     await typeLine("Injecting daemons into target memory...");
-    await ns.sleep(500);
+    await ns.sleep(100);
 
     await typeLine("Bypassing black ICE...");
-    await ns.sleep(500);
+    await ns.sleep(100);
 
     // -----------------------------
     // Phase 4: Progress bars
@@ -333,7 +214,7 @@ async function nonsense2(ns) {
     // Phase 5: Countdown
     // -----------------------------
     cls();
-    await ns.sleep(800);
+    await ns.sleep(500);
 
     for (const n of [3, 2, 1]) {
         cls();
@@ -341,54 +222,28 @@ async function nonsense2(ns) {
  ███████╗
  ╚══${n}══╝
         `);
-        await ns.sleep(1000);
+        await ns.sleep(500);
     }
-
+    // Dramatic pause
+    await ns.sleep(1000);
     // -----------------------------
     // Phase 6: Final reveal
     // -----------------------------
     cls();
     term(`
-██╗███╗   ██╗██╗████████╗
-██║████╗  ██║██║╚══██╔══╝
-██║██╔██╗ ██║██║   ██║
-██║██║╚██╗██║██║   ██║
-██║██║ ╚████║██║   ██║
-╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝
-
-██╗ █████╗ ██╗     ██╗███████╗███████╗██████╗
-██║██╔══██╗██║     ██║╚══███╔╝██╔════╝██╔══██╗
-██║███████║██║     ██║  ███╔╝ █████╗  ██║  ██║
-██║██╔══██║██║     ██║ ███╔╝  ██╔══╝  ██║  ██║
-██║██║  ██║███████╗██║███████╗███████╗██████╔╝
-╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝╚═════╝
+██╗███╗   ██╗██╗████████╗██╗ █████╗ ██╗     ██╗███████╗███████╗██████╗
+██║████╗  ██║██║╚══██╔══╝██║██╔══██╗██║     ██║╚══███╔╝██╔════╝██╔══██╗
+██║██╔██╗ ██║██║   ██║   ██║███████║██║     ██║  ███╔╝ █████╗  ██║  ██║
+██║██║╚██╗██║██║   ██║   ██║██╔══██║██║     ██║ ███╔╝  ██╔══╝  ██║  ██║
+██║██║ ╚████║██║   ██║   ██║██║  ██║███████╗██║███████╗███████╗██████╔╝
+╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝╚═════╝
 `);
-
-    await ns.sleep(2500);
 
     // -----------------------------
     // Phase 7: Dramatic countdown
     // -----------------------------
 
-    // Dramatic pause
-    cls();
-    await ns.sleep(3000);
 
-    // Countdown
-    for (const n of [3, 2, 1]) {
-        term(`........${n}`);
-        await ns.sleep(1000);
-        cls();
-    }
-
-    // Initialised
-    term("Initialised");
-    await ns.sleep(1000);
-
-    // Add dots
-    for (let i = 0; i < 4; i++) {
-        term(".");
-        await ns.sleep(1000);
-    }
 
 }
+

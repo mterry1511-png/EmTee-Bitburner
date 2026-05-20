@@ -1,11 +1,11 @@
-EmTee's Bitburner 0.44
-targeting.js complete - needs testing
+EmTee's Bitburner 0.5
+
+dispatch.js and deployer.js in a good state! ready for resets
 
 
-Next up:
-    deployer script 
-        prune childArr with Chatgpt's recommendation - it is memory leaking rn
-        restructure so the repeated code sits in functions appropriately.
-     
-    util.js:
-    util.js comments will be updated to match the new API
+Next up
+    targeting.js needs hacklvl fixing
+    watch tools
+    autopurchase watch
+
+

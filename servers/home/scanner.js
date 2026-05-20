@@ -4,7 +4,7 @@ export async function main(ns) {
     scanNetwork(ns);
 }
 // Scans the network and writes all server information to networks.json
-export function scanNetwork(ns, quiet = false) {
+export async function scanNetwork(ns, quiet = false) {
     // set silent if -q specified
     quiet = quiet || ns.args.includes("-q");
 

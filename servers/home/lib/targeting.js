@@ -29,10 +29,18 @@ export function getTarget(ns, mode) {
             return target.hostname;
         }
 
+        case "easy": {
+            const target = "n00dles"
+            // print function
+            printTarget(ns, target, mode);
+            // returns hostname given from mode specific function 
+            return target;
+        }
+
         default: {
             // Print default message 
-            ns.print("Mode not Specified. Using default mode: " + mode);
-            ns.tprint("Mode not Specified. Using default mode: " + mode);
+            ns.print("Targeting mode not specified. Using default mode: best");
+            ns.tprint("Targeting mode not specified. Using default mode: best");
 
             // Call mode specific function
             const target = getBestMoney(ns);
@@ -43,22 +51,19 @@ export function getTarget(ns, mode) {
         }
     }
 
-
 }
-
 
 // prints to terminal and log depending on target and mode
 function printTarget(ns, target, mode, moneyPerSec) {
-    let modeSelected = "";
     switch (mode) {
-        case "best": {  modeSelected = " was selected based on the highest money per second at threshold"; break; }
-        case "hacklvl": {  modeSelected = " was selected based on the highest hack level possible"; break; }
+        case "best": {  ns.print(target + " was selected based on the highest money per second at threshold."); break; }
+        case "hacklvl": {  ns.print(target + " was selected based on the highest hack level possible."); break; }
+        case "easy": {  ns.print(target + " was selected because it's easy as fuck to hack."); return; }
     }
     // Print result to terminal and the log
-    const print = ("\nTarget " + target + modeSelected + "\n$" + (moneyPerSec * 60) + " expected per minute\n");
+    const print = ("\nTarget " + target + "\n$" + (Math.round(moneyPerSec * 60)) + " expected per minute, per thread.\n");
     ns.tprint(print);
     ns.print(print);
-
 }
 
 
@@ -261,4 +266,21 @@ function getBestMoney(ns) {
     // returns the server hostname with the highest expected value per second that meets the requirements from cfg.json
     // returns hostname and money per second for printing later
     return bestTarget;
+}
+
+
+
+// Called by deployer for security check
+export function getMinDifficulty(ns, hostname) {
+    const servers = JSON.parse(ns.read("data/networks.json"));
+    const serverData = servers.find(s => s.hostname === hostname);
+    
+    // error handling
+    if (!serverData) {
+        ns.print(`Error: ${hostname} not found in networks.json`);
+        return null;
+    }
+
+    //return without deployer needing to load up networks.json
+    return serverData.minDifficulty;
 }

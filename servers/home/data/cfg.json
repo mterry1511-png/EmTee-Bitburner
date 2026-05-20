@@ -20,5 +20,6 @@
         "hardwareStores": [
             "alphaent"
         ]
-    }
+    },
+    "leaveRamFree": 2
 }

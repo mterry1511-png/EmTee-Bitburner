@@ -118,12 +118,13 @@ export function autoNuke(ns, targetServer, quiet = false) {
 }
 
 // Get available threads function 
-// You pass in (example) ns.getScriptRam("weaken.js") as an arg rather . Keeps the util function pure and reusable.
 // Returns the number of threads available on the target server, based on its RAM and the RAM required for a single thread of the specified script
-// Example usage: getAvailableThreads(ns, n00dles, ns.getScriptRam("weaken.js"));
-// Example gets the script RAM for weaken.js, then calculates how many threads of weaken.js could run on n00dles based on its available RAM
-export function getAvailableThreads(ns, targetServer, scriptRam) {
-    const availableRam = ns.getServerMaxRam(targetServer) - ns.getServerUsedRam(targetServer);
+// Example usage: getAvailableThreads(ns, home, "hack.js");
+// Example gets the script RAM for hack.js, then calculates how many threads of hack.js could run on home based on its available RAM
+// Also use on cloud servers
+export function getAvailableThreads(ns, scriptHost, script) {
+    const availableRam = (ns.getServerMaxRam(scriptHost) - JSON.parse(ns.read("./data/cfg.json")).leaveRamFree ?? 0) - ns.getServerUsedRam(scriptHost);       // always leaves space free - set in cfg.json
+    const scriptRam = ns.getScriptRam(script, scriptHost)
     return Math.floor(availableRam / scriptRam);
 }
 

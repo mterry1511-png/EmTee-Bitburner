@@ -8,19 +8,24 @@
     "sqlPortOpen": false,
     "hasAdminRights": true,
     "cpuCores": 2,
-    "isConnectedTo": true,                                  xxxxxxxxxxxxNOT STOREDxxxxxxxxxxxx
-    "ramUsed": 4095.3,                                      xxxxxxxxxxxxNOT STOREDxxxxxxxxxxxx
+    "isConnectedTo": true,
+    "ramUsed": 4095.3,
     "maxRam": 4096,
     "organizationName": "Home PC",
     "purchasedByPlayer": true,
     "backdoorInstalled": false,
     "baseDifficulty": 1,
-    "hackDifficulty": 1,                                    xxxxxxxxxxxxNOT STOREDxxxxxxxxxxxx
+    "hackDifficulty": 1,
     "minDifficulty": 1,
-    "moneyAvailable": 118377529910.0953,                    xxxxxxxxxxxxNOT STOREDxxxxxxxxxxxx
+    "moneyAvailable": 118377529910.0953,
     "moneyMax": 0,
     "numOpenPortsRequired": 5,
-    "openPortCount": 3,                                     xxxxxxxxxxxxNOT STOREDxxxxxxxxxxxx  
+    "openPortCount": 3, 
     "requiredHackingSkill": 1,
     "serverGrowth": 1
     */
+
+
+
+
+    CALL AS ASYNC
