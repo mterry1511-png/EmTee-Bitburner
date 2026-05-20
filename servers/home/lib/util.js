@@ -123,7 +123,7 @@ export function autoNuke(ns, targetServer, quiet = false) {
 // Example gets the script RAM for hack.js, then calculates how many threads of hack.js could run on home based on its available RAM
 // Also use on cloud servers
 export function getAvailableThreads(ns, scriptHost, script) {
-    const availableRam = (ns.getServerMaxRam(scriptHost) - JSON.parse(ns.read("./data/cfg.json")).leaveRamFree ?? 0) - ns.getServerUsedRam(scriptHost);       // always leaves space free - set in cfg.json
+    const availableRam = (ns.getServerMaxRam(scriptHost) - JSON.parse(ns.read("./data/cfg.json")).leaveRamFree - ns.getServerUsedRam(scriptHost));       // always leaves space free - set in cfg.json
     const scriptRam = ns.getScriptRam(script, scriptHost)
     return Math.floor(availableRam / scriptRam);
 }
