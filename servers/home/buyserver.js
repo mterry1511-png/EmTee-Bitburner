@@ -1,6 +1,9 @@
 /** @param {NS} ns */
-import { autoNuke } from "./lib/util.js";
-export async function main(ns, newcloudname, targetserver) {
+export async function main(ns,) {
+    // handle args
+    const newcloudname = ns.args[0];
+
+    //calls help
     const help = ns.args.includes("help");
     if (help) {
         printusage(ns);
@@ -9,27 +12,28 @@ export async function main(ns, newcloudname, targetserver) {
     function printusage(ns) {
         ns.tprint("This script will buy the most expensive server you can afford from targetserver, with the name specified by newcloudname.");
         ns.tprint("Run this script on home server");
-        ns.tprint("Usage: run buyserver.js [newcloudname] [targetserver]");
-        ns.tprint("Example: run buyserver.js my-new-server server-to-purchase-from");
+        ns.tprint("Usage: run buyserver.js [newcloudname]");
+        ns.tprint("Example: run buyserver.js my-new-server");
         return;
     }
-    buy(ns, newcloudname, targetserver);
+
+    //core functionality
+    buy(ns, newcloudname);
 }
-async function buy(ns, newcloudname, targetserver) {
+async function buy(ns, newcloudname) {
     // we will use this variable to track the last known affordable RAM amount, starting at 2GB, and double it until we find the most expensive server we can afford
     let affordableram = 2;
     if (!(newcloudname)) {
         newcloudname = "cloud";
     }
-    // Openports on targetserver, root needed for server purchase
-    await autoNuke(ns, targetserver);
+
     while (true) {
         // if we can't afford a server with double the RAM of last tested, buy it and end program 
         if (ns.cloud.getServerCost(affordableram * 2) > ns.getPlayer().money) {
-            //buy it
+            // can't afford double, so buy current amount
             ns.cloud.purchaseServer(newcloudname.toString(), affordableram);
             //print results to terminal
-            ns.tprint("Bought server " + newcloudname + " with " + affordableram + "GB of RAM for $" + ns.cloud.getServerCost(affordableram) + ". Remaining money: $" + (ns.getPlayer().money - ns.cloud.getServerCost(affordableram)));
+            ns.tprint("Bought server " + newcloudname + " with " + affordableram + "GB of RAM for $" + ns.cloud.getServerCost(affordableram) + ". Remaining money: $" + ns.getPlayer().money);
             return;
         }
         else {

@@ -2,9 +2,18 @@ import * as targeting from "./lib/targeting.js";
 import { getAvailableThreads } from "./lib/util.js";
 
 /** @param {NS} ns */
-export async function start(ns, scriptHost, targetMode) {
+export async function main(ns) {
+    const scriptHost = ns.args[0] ?? "home";
+    const targetMode = ns.args[1] ?? "best";
+    const target = ns.args[2] ?? null;
+    await start(ns, scriptHost, targetMode, target);
+}
+
+/** @param {NS} ns */
+export async function start(ns, scriptHost, targetMode, target = null) {
     // handle args
-    const target = targeting.getTarget(ns, targetMode);
+    target = target ?? targeting.getTarget(ns, targetMode);
+    
 
     // load config
     const cfg = JSON.parse(ns.read("./data/cfg.json"));
@@ -56,8 +65,6 @@ export async function start(ns, scriptHost, targetMode) {
         // update server details
         currentSec = ns.getServerSecurityLevel(target);
         currentMoney = ns.getServerMoneyAvailable(target);
-
-        await ns.sleep(2000);
 
         // prune finished child processes from array
         childArr = childArr.filter(pid => ns.isRunning(pid));
@@ -113,6 +120,9 @@ export async function start(ns, scriptHost, targetMode) {
                 ns.print(`Optimal hack conditions met`);
             }
         }
+        
+        // sleep to not overload the server with requests
+        await ns.sleep(1000);
     }
 }
 
@@ -120,6 +130,7 @@ export async function start(ns, scriptHost, targetMode) {
 export async function execute(ns, target, threads, script, scriptHost, childArr, state) {
     ns.disableLog("ALL");
 
+    // Catch error ( divde by 0 threads)
     if (threads < 1) {
         if (!state.waiting) {
             ns.print("\nInsufficient RAM. Waiting...\n");
@@ -129,10 +140,18 @@ export async function execute(ns, target, threads, script, scriptHost, childArr,
         return false;
     }
 
+    // hold pid of executed scripts
     const pid = ns.exec(script, scriptHost, threads, target);
     if (pid !== 0) {
         childArr.push(pid);
         ns.print(`Ran ${script} [${pid}] with ${threads} threads on ${scriptHost} targeting ${target}`);
+
+        // after exec, wait for the childen to finish before looping
+        while (childArr.some(pid => ns.isRunning(pid))) {
+            await ns.sleep(3000);
+        }
+
+        // flags success back to main loop
         return true;
     }
     return false;

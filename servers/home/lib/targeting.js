@@ -13,16 +13,28 @@ export function getTarget(ns, mode) {
     switch (mode) {
         case "best": {
             // Call mode specific function
-            const target = getBestMoney(ns);
+            // Shares getBestMoney with "rank" case but returns only a single server hostname
+            const targets = getBestMoney(ns);
+            const target = targets[0];
             // print function
             printTarget(ns, target.hostname, mode, target.moneyPerSec);
             // returns hostname given from mode specific function 
             return target.hostname;
         }
 
+        case "ranked": {
+            // Call mode specific function
+            // Shares getBestMoney with "best" case but returns an array of hostnames
+            const targets = getBestMoney(ns);
+            //print function
+            ns.print("Hackable servers ranked in array, n=" + targets.length);
+            return targets.map(t => t.hostname);
+        }
+
         case "hacklvl": {
             // Call mode specific function
-            const target = getBestHackLvlTarget(ns);
+            const targets = getBestHackLvlTarget(ns);
+            const target = targets[0];
             // print function
             printTarget(ns, target.hostname, mode, target.moneyPerSec);
             // returns hostname given from mode specific function 
@@ -38,19 +50,17 @@ export function getTarget(ns, mode) {
         }
 
         default: {
-            // Print default message 
-            ns.print("Targeting mode not specified. Using default mode: best");
-            ns.tprint("Targeting mode not specified. Using default mode: best");
+            ns.print("Targeting mode not specified. Using default mode: ranked");
+            ns.tprint("Targeting mode not specified. Using default mode: ranked");
 
             // Call mode specific function
-            const target = getBestMoney(ns);
-            // print function
-            printTarget(ns, target.hostname, mode, target.moneyPerSec);
-            // returns hostname given from mode specific function 
-            return target.hostname;
+            // Shares getBestMoney with "best" case but returns an array of hostnames
+            const targets = getBestMoney(ns);
+            //print function
+            ns.print("Hackable servers ranked in array, n=" + targets.length);
+            return targets.map(t => t.hostname);
         }
     }
-
 }
 
 // prints to terminal and log depending on target and mode
@@ -179,9 +189,9 @@ function getBestMoney(ns) {
     // loads config
     const cfg = JSON.parse(ns.read("data/cfg.json"));
 
-    // declare variable to keep track of best target to be returned at the end of the function
-    // hostname, value per second
-    let bestTarget = { hostname: "", moneyPerSec: 0 };
+    // declare arr to keep track of best targets in desc order to be returned at the end of the function
+    // each slot has [hostname, value per second]
+    const rankedTargets = [];
 
     // We need to change behaviour if we don't have Formulas.exe commands available
     const hasFormulas = ns.fileExists("Formulas.exe", "home");
@@ -257,18 +267,23 @@ function getBestMoney(ns) {
             moneyPerSec = (rewardAtThresh / (hackTimeMs / 1000));
         }
 
-        // Replace bestTarget if this server has a higher expected value per second than the current bestTarget moneyPerSec
-        if (moneyPerSec > bestTarget.moneyPerSec) {
-            bestTarget = { hostname: server.hostname, moneyPerSec };
-        }
+        // Add hackable servers to an arr (UNSORTED)
+        rankedTargets.push({ hostname: server.hostname, moneyPerSec });
     }
 
-    // returns the server hostname with the highest expected value per second that meets the requirements from cfg.json
-    // returns hostname and money per second for printing later
-    return bestTarget;
+    // Sorts array by highest expected value per second
+    rankedTargets.sort((a, b) => b.moneyPerSec - a.moneyPerSec);
+
+    // Catch error if empty
+    if (rankedTargets.length === 0) {
+        ns.print("Error: No valid targets found. Check requirements in cfg.json.");
+        return [];
+    }
+
+    // then returns array of servers that meets the requirements from cfg.json
+    // each slot has hostname and money per second for each server for the purpose of printing later
+    return rankedTargets;
 }
-
-
 
 // Called by deployer for security check
 export function getMinDifficulty(ns, hostname) {

@@ -21,5 +21,8 @@
             "alphaent"
         ]
     },
-    "leaveRamFree": 10
+    "leaveRamFree": 20,
+    "deployToHome": false,
+    "minDispatchServers": 4,
+    "maxDispatchServers": 6
 }

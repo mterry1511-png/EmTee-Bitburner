@@ -30,7 +30,7 @@ export async function main(ns) {
     }
 
     // Refresh "/data/networks.json"
-    await scanNetwork(ns, true);
+    scanNetwork(ns, true);
 
     // exec buyRAM
 
@@ -44,14 +44,6 @@ export async function main(ns) {
 
     // exec watch
 
-
-
-    // DEBUG
-    const results = []
-    // DEBUG
-
-
-
     await printResults(ns, results);
 }
 
@@ -61,23 +53,25 @@ async function printResults(ns, results) {
     // Consider putting all watch into a single watch.js?
 
     // Fun little countdown nonsense
-    await nonsense2(ns);
+    await nonsense(ns);
 
     // Print results
     ns.tprint("\n\nInitialisation:\n");
-    ns.tprint("  Network mapped and stored in ./data/networks.json\n");
+    ns.tprint("  Network scanned and stored in ./data/networks.json\n");
     ns.tprint("  AutoNuked all servers\n");
     // ns.tprint("  Executed servWatch for automated nuking\n");
     // ns.tprint("  Executed ramWatch for automated RAM purchasing\n");
     // ns.tprint("  Executed hacknetWatch for automated hacknet purchasing \n");
     // ns.tprint("  Executed augWatch for automated augmentation purchasing \n");
     // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
+    ns.tprint("run dispatch.js to get started");
+    ns.tprint("run refresh.js to update networks/json and autonuke");
     ns.tprint("\n\n");
 }
 
 
 /** @param {NS} ns */
-async function nonsense2(ns) {
+async function nonsense(ns) {
     // Ultra-dramatic cyberpunk boot sequence for Bitburner terminal.
 
     const chars =

@@ -1,0 +1,30 @@
+// import functions required
+import { scanNetwork } from "./scanner.js";
+import { autoNuke } from "./lib/util.js";
+
+
+
+// IDEA - later this can be turned into a controller which is timed, compares besttarget array and restarts deployer if the top cfg.maxDispatchServers entries changes 
+
+/** @param {NS} ns */
+//doesn't take args by design
+export async function main(ns) {
+    // run scanner to build "/data/networks.json"
+    scanNetwork(ns, true);
+
+    // write full server information to servers
+    const servers = JSON.parse(ns.read("./data/networks.json"));
+
+    // exec autoNuke on all servers
+    for (const targetServer of servers) {
+        autoNuke(ns, targetServer.hostname, true);
+    }
+
+    // Refresh "/data/networks.json"
+    scanNetwork(ns, true);
+
+    // Print for user
+    ns.ui.clearTerminal();
+    ns.tprint("Refreshed ./data/networks.json");
+    ns.tprint("Executed ./lib/util.autonuke)");
+}

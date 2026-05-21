@@ -4,6 +4,7 @@ Usage:
 // i.e:
 // "best" - Returns hostname of a server that we have root access to with the highest expected value per second (moneyMax * hackChance / hackTime)
 // "hacklvl" - Returns hostname of a server that we have root access to with the highest hackable level. 
+// "ranked" - Returns an array of hostnames that are hackable in order of best to worst
 
         i.e.
             import * as targeting from "./lib/targeting.js"; 
