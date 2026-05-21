@@ -1,6 +1,9 @@
-EmTee's Bitburner 1.0
+EmTee's Bitburner v1.0
 Huge release. Fully usable and ready to smash the game. 
 
+tweak dispatch.js?
+cloudBuy.js
+Scheduler from home (STRONG AS HELL)
 
 Next up
     dispatch.js v2

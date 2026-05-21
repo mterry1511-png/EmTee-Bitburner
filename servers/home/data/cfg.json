@@ -1,7 +1,8 @@
 {
     "cloudPushSleep": 5000,
-    "securityThresh": 5,
-    "moneyThresh": 0.75,
+    "securityThresh": 2,
+    "moneyThresh": 0.88,
+    "targetHackFraction": 0.1,
     "networkmapped": false,
     "targetRequirements": {
         "minHackChance": 0.75,
@@ -23,6 +24,7 @@
     },
     "leaveRamFree": 20,
     "deployToHome": false,
-    "minDispatchServers": 4,
-    "maxDispatchServers": 6
+    "minDispatchServers": 1,
+    "maxDispatchServers": 2
+    
 }

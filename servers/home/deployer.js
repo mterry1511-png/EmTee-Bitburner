@@ -13,7 +13,7 @@ export async function main(ns) {
 export async function start(ns, scriptHost, targetMode, target = null) {
     // handle args
     target = target ?? targeting.getTarget(ns, targetMode);
-    
+
 
     // load config
     const cfg = JSON.parse(ns.read("./data/cfg.json"));
@@ -38,7 +38,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
     let currentSec;
     let currentMoney;
 
-    // array that holds PID of child scripts - to cull on exit
+    // Jobs currently running from this deployer, used to avoid over-queuing stale work.
     let childArr = [];
 
     // Counters
@@ -48,8 +48,8 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
     // Cleanup - kill child processes and print report
     ns.atExit(() => {
-        for (const p of childArr) {
-            ns.kill(p);
+        for (const child of childArr) {
+            ns.kill(child.pid);
         }
         ns.print(" ");
         ns.print("* Hack on " + target + " terminated");
@@ -67,14 +67,20 @@ export async function start(ns, scriptHost, targetMode, target = null) {
         currentMoney = ns.getServerMoneyAvailable(target);
 
         // prune finished child processes from array
-        childArr = childArr.filter(pid => ns.isRunning(pid));
+        childArr = childArr.filter(child => ns.isRunning(child.pid));
+
+        const runningThreads = (script) =>
+            childArr
+                .filter(child => child.script === script)
+                .reduce((sum, child) => sum + child.threads, 0);
 
         // If security is above threshold, weaken it
         if (currentSec > securityThreshActual) {
             const script = "weaken.js";
             const securityToReduce = currentSec - securityThreshActual;
             const maxWeakenThreads = Math.ceil(securityToReduce / weakenPerThread);
-            const threads = Math.min(getAvailableThreads(ns, scriptHost, script), maxWeakenThreads);
+            const neededThreads = maxWeakenThreads - runningThreads(script);
+            const threads = Math.min(getAvailableThreads(ns, scriptHost, script), neededThreads);
 
             const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
             if (success) {
@@ -93,7 +99,8 @@ export async function start(ns, scriptHost, targetMode, target = null) {
             const growMultiplier = (maxMoney * cfg.moneyThresh) / safeMoney;
             const maxGrowThreads = Math.ceil(ns.growthAnalyze(target, growMultiplier));
             const availableThreads = getAvailableThreads(ns, scriptHost, script);
-            const threads = Math.min(availableThreads, maxGrowThreads);
+            const neededThreads = maxGrowThreads - runningThreads(script);
+            const threads = Math.min(availableThreads, neededThreads);
 
             const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
             if (success) {
@@ -108,8 +115,10 @@ export async function start(ns, scriptHost, targetMode, target = null) {
         // Otherwise, hack it
         else {
             const script = "hack.js";
-            const maxHackThreads = Math.floor(1 / ns.hackAnalyze(target));
-            const threads = Math.min(getAvailableThreads(ns, scriptHost, script), maxHackThreads);
+            const targetHackFraction = cfg.targetHackFraction ?? 0.05;
+            const maxHackThreads = Math.max(1, Math.floor(targetHackFraction / ns.hackAnalyze(target)));
+            const neededThreads = maxHackThreads - runningThreads(script);
+            const threads = Math.min(getAvailableThreads(ns, scriptHost, script), neededThreads);
 
             const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
             if (success) {
@@ -120,7 +129,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
                 ns.print(`Optimal hack conditions met`);
             }
         }
-        
+
         // sleep to not overload the server with requests
         await ns.sleep(1000);
     }
@@ -143,13 +152,13 @@ export async function execute(ns, target, threads, script, scriptHost, childArr,
     // hold pid of executed scripts
     const pid = ns.exec(script, scriptHost, threads, target);
     if (pid !== 0) {
-        childArr.push(pid);
+        childArr.push({ pid, script, threads });
         ns.print(`Ran ${script} [${pid}] with ${threads} threads on ${scriptHost} targeting ${target}`);
 
         // after exec, wait for the childen to finish before looping
-        while (childArr.some(pid => ns.isRunning(pid))) {
-            await ns.sleep(3000);
-        }
+        // while (childArr.some(pid => ns.isRunning(pid))) {
+        //     await ns.sleep(3000);
+        // }
 
         // flags success back to main loop
         return true;

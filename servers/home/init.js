@@ -18,6 +18,8 @@ export async function main(ns) {
     // import config file
     const cfg = JSON.parse(ns.read("./data/cfg.json"));
 
+    const results = "";
+
     // run scanner to build "/data/networks.json"
     scanNetwork(ns, true);
 
@@ -43,7 +45,7 @@ export async function main(ns) {
     // exec buyTor and programs (SINGULARITY)
 
     // exec watch
-
+    
     await printResults(ns, results);
 }
 
