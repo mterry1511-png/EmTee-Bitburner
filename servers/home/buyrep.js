@@ -14,8 +14,9 @@ export async function main(ns) {
         // threads to fill hostserver determined 
         threads = getAvailableThreads(ns, host, "./lib/share.js");
 
-        if (threads == 0) {
-            continue
+        if (threads < 1) {
+            await ns.sleep(100);
+            continue;
         }
 
         // exec

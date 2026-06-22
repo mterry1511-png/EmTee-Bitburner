@@ -1,5 +1,6 @@
 // import functions required
 import { scanNetwork } from "./scanner.js";
+import { scanCloud } from "./scanner.js";
 import { autoNuke } from "./lib/util.js";
 
 
@@ -22,6 +23,7 @@ export async function main(ns) {
 
     // Refresh "/data/networks.json and clouds.json"
     scanNetwork(ns, true);
+    scanCloud(ns, true);
 
     // Print for user
     ns.ui.clearTerminal();

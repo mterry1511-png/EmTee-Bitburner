@@ -131,15 +131,15 @@ export async function scanCloud(ns, quiet = false) {
     }
 
     // add server pairs if cloud
-    network = JSON.parse(ns.read("./data/networks.json"));
-    let clouds = [];
+    const network = JSON.parse(ns.read("./data/networks.json"));
+    let clouds = {};
 
     // loop to add server pairs if cloud
-    for (const i in network) {
-        if (i.purchasedByPlayer) {
+    for (const server of network) {
+        if (server.purchasedByPlayer) {
             // add server to clouds array
-            clouds[i.hostname()] = {
-                maxRam: ns.getServerMaxRam(i)
+            clouds[server.hostname] = {
+                maxRam: ns.getServerMaxRam(server.hostname)
             };
         }
 
