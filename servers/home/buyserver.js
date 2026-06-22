@@ -31,9 +31,20 @@ async function buy(ns, newcloudname) {
         // if we can't afford a server with double the RAM of last tested, buy it and end program 
         if (ns.cloud.getServerCost(affordableram * 2) > ns.getPlayer().money) {
             // can't afford double, so buy current amount
-            ns.cloud.purchaseServer(newcloudname.toString(), affordableram);
-            //print results to terminal
+            newcloudname = ns.cloud.purchaseServer(newcloudname.toString(), affordableram);
+            // print results to terminals
             ns.tprint("Bought server " + newcloudname + " with " + affordableram + "GB of RAM for $" + ns.cloud.getServerCost(affordableram) + ". Remaining money: $" + ns.getPlayer().money);
+
+            // add cloud server to JSON
+            const servs = JSON.parse(ns.read("./data/clouds.json"));           // write clouds/json to an obj
+
+            // add newly purchased server
+            servs[newcloudname] = {
+                maxRam: ns.getServerMaxRam(newcloudname)
+            };
+
+            // write updated file
+            ns.write("./data/clouds.json", JSON.stringify(servs), "w");
             return;
         }
         else {

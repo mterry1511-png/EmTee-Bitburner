@@ -1,15 +1,36 @@
 /** @param {NS} ns */
-// Main
+// Pass arg[0] 0 for default or 1 for cloud only
 export async function main(ns) {
-    scanNetwork(ns);
+    if (!args[0]) {
+        scanNetwork(ns);
+        scanCloud(ns);
+    }
+    else if (args[0] == 1) {
+        scanCloud(ns);
+    }
+    else {
+        scanNetwork(ns);
+        scanCloud(ns);
+    };
 }
+
+
+// printusage function
+function printusage(ns) {
+    ns.tprint("Usage: run scanner.js - use from home only");
+    ns.tprint("Pass argument 0 for default or 1 for cloud")
+    ns.tprint("(Default) 0: Maps the network out and writes all server information to 'networks.json. Then scan all cloud servers'");
+    ns.tprint("1: Scans all cloud servers and writes cloud information to clouds.json")
+    ns.tprint("Use -q to run silently'")
+}
+
 // Scans the network and writes all server information to networks.json
 export async function scanNetwork(ns, quiet = false) {
     // set silent if -q specified
     quiet = quiet || ns.args.includes("-q");
 
     // Disable log output if quiet
-    if (quiet){
+    if (quiet) {
         ns.disableLog("ALL");
     }
 
@@ -93,11 +114,38 @@ export async function scanNetwork(ns, quiet = false) {
     }
 }
 
-// printusage function
-function printusage(ns) {
-    ns.tprint("Usage: run scanner.js - use from home only");
-    ns.tprint("Maps the network out and writes all server information to 'networks.json'");
-    ns.tprint("Use -q to run silently'")
+// Scans all cloud servers and writes cloud information to clouds.json
+export async function scanCloud(ns, quiet = false) {
+    // set silent if -q specified
+    quiet = quiet || ns.args.includes("-q");
+
+    // Disable log output if quiet
+    if (quiet) {
+        ns.disableLog("ALL");
+    }
+
+    // printusage  if "help" is included in args
+    if (ns.args.includes("help")) {
+        printusage(ns);
+        return;
+    }
+
+    // add server pairs if cloud
+    network = JSON.parse(ns.read("./data/networks.json"));
+    let clouds = [];
+
+    // loop to add server pairs if cloud
+    for (const i in network) {
+        if (i.purchasedByPlayer) {
+            // add server to clouds array
+            clouds[i.hostname()] = {
+                maxRam: ns.getServerMaxRam(i)
+            };
+        }
+
+    }
+    // write updated arr to file
+    ns.write("./data/clouds.json", JSON.stringify(clouds), "w");
 }
 
 

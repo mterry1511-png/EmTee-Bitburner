@@ -1,0 +1,8 @@
+{
+  "cloud-7": {
+    "maxRam": 8192
+  },
+  "cloud-8": {
+    "maxRam": 512
+  }
+}

@@ -24,7 +24,7 @@
     },
     "leaveRamFree": 20,
     "deployToHome": false,
-    "minDispatchServers": 1,
-    "maxDispatchServers": 2
+    "minDispatchServers": 8,
+    "maxDispatchServers": 8     
     
 }

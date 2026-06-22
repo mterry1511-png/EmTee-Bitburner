@@ -20,7 +20,7 @@ export async function main(ns) {
         autoNuke(ns, targetServer.hostname, true);
     }
 
-    // Refresh "/data/networks.json"
+    // Refresh "/data/networks.json and clouds.json"
     scanNetwork(ns, true);
 
     // Print for user

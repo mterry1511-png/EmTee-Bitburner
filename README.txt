@@ -1,6 +1,27 @@
 EmTee's Bitburner v1.0
 Huge release. Fully usable and ready to smash the game. 
 
+
+Next Step: dispatch tweak
+Dispatch adjustment summary:
+
+**Goal:** Dispatch clouds efficiently — 1 deployer per cloud server, 1 target each, paired by RAM rank.
+
+**Step 1 — `getCloudServers(ns)` in util.js**
+New exported function. Returns `ns.getPurchasedServers()` sorted by max RAM descending, filtered to those with enough RAM to run deployer.js. No `leaveRamFree` applied. Signature: `getCloudServers(ns)`.
+
+**Step 2 — dispatch.js new default behaviour**
+Triggered when no args passed. Before dispatching, kill all running deployer.js instances on all cloud servers — this cascades to their children via the existing `ns.atExit` cleanup in deployer. Then get ranked targets and cloud list, zip by index, exec one deployer per cloud passing the cloud as scripthost and its assigned target. Launch count is `Math.min(targets.length, clouds.length)`. Existing modes untouched.
+
+**Step 3 — buyserver.js threshold check**
+After the doubling loop finds `affordableRam`, check against `cfg.purchaseConfig.mincloudRAM` before purchasing. If below threshold, print and exit without buying. Config key already exists in cfg.json.
+
+**Decisions resolved:**
+- Dispatch kills all deployers on clouds before re-dispatching ✓
+- Home excluded from cloud pool ✓
+- `leaveRamFree` not applied to clouds ✓
+
+
 tweak dispatch.js?
 cloudBuy.js
 Scheduler from home (STRONG AS HELL)
@@ -41,6 +62,7 @@ stuff I am doing to script up
     
         each time after
     killall
+    <ADJUSTING CONFIG FILE FOR SERVER NUMBER>
     run refresh.js
     run dispatch.js
 
