@@ -34,6 +34,8 @@ export async function main(ns) {
     // Refresh "/data/networks.json"
     scanNetwork(ns, true);
 
+    ns.run("daemon.js",1);
+
     // exec buyRAM
 
     // exec buyHacknet
@@ -66,8 +68,8 @@ async function printResults(ns, results) {
     // ns.tprint("  Executed hacknetWatch for automated hacknet purchasing \n");
     // ns.tprint("  Executed augWatch for automated augmentation purchasing \n");
     // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
+    ns.tprint("daemon.js running");
     ns.tprint("run dispatch.js to get started");
-    ns.tprint("run refresh.js to update networks/json and autonuke");
     ns.tprint("\n\n");
 }
 

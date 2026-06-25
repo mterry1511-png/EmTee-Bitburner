@@ -9,7 +9,8 @@ export async function main(ns) {
     while (true) {
         const clouds = JSON.parse(ns.read("./data/clouds.json"));
         for (const cloudName in clouds) {
-            if (!ns.isRunning("cloudpush.js", cloudName)) {
+
+            if (!ns.isRunning("cloudpush.js", cloudName, cloudName)) {
                 ns.scp("cloudpush.js", cloudName, "home");
                 ns.exec("cloudpush.js", cloudName, 1, cloudName);
             }

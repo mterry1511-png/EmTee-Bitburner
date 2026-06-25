@@ -31,7 +31,7 @@ export async function main(ns, quiet = false) {
     scanCloud(ns, true);
 
     // Print for user
-    ns.ui.clearTerminal();
-    ns.tprint("Refreshed ./data/networks.json");
-    ns.tprint("Executed ./lib/util.autonuke)");
+//     ns.ui.clearTerminal();
+//     ns.tprint("Refreshed ./data/networks.json");
+//     ns.tprint("Executed ./lib/util.autonuke)");
 }
