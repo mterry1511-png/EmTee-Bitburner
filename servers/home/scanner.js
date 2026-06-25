@@ -137,10 +137,12 @@ export async function scanCloud(ns, quiet = false) {
     // loop to add server pairs if cloud
     for (const server of network) {
         if (server.purchasedByPlayer) {
-            // add server to clouds array
-            clouds[server.hostname] = {
-                maxRam: ns.getServerMaxRam(server.hostname)
-            };
+            if (server.hostname != "home") {
+                // add server to clouds array
+                clouds[server.hostname] = {
+                    maxRam: ns.getServerMaxRam(server.hostname)
+                }
+            }
         }
 
     }

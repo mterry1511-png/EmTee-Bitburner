@@ -43,14 +43,13 @@ export async function main(ns) {
         ns.tprint("Executed buyrep on " + host);
     }
 
-    
+
     else {
         ns.tprint("ERROR: Invalid host target - terminated");
         printusage(ns);
         return;
     }
 }
-
 
 // runs on cloud server 
 async function buyrep(ns, host) {
@@ -64,7 +63,7 @@ async function buyrep(ns, host) {
         // threads to fill hostserver determined 
         threads = getAvailableThreads(ns, host, "./lib/share.js");
 
-        ns.tprint("\nthreads: " + threads + "\nhost: " + host);
+        // debug ns.tprint("\nthreads: " + threads + "\nhost: " + host);
 
         if (threads < 1) {
             await ns.sleep(100);

@@ -9,7 +9,12 @@ import { autoNuke } from "./lib/util.js";
 
 /** @param {NS} ns */
 //doesn't take args by design
-export async function main(ns) {
+export async function main(ns, quiet = false) {
+    quiet = quiet || ns.args.includes("-q");
+    if (quiet) {
+        ns.disableLog("ALL");
+    }
+
     // run scanner to build "/data/networks.json"
     scanNetwork(ns, true);
 
