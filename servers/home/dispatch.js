@@ -1,6 +1,8 @@
 import * as targeting from "./lib/targeting.js";
 
-/** @param {NS} ns */
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
     // handle args
     const scriptHost = ns.args[0] ?? "home";
@@ -88,6 +90,9 @@ export async function main(ns) {
 }
 
 
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 function printUsage(ns) {
     ns.tprint("=== dispatch.js ===");
     ns.tprint("Launches deployer instances to hack targets based on targeting mode.");

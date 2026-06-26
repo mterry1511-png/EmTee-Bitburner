@@ -1,5 +1,8 @@
 import { getAvailableThreads } from "./lib/util.js";
 
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 function printusage(ns) {
     ns.tprint("Run from home server only");
     ns.tprint("Specify cloud server to run on - fills ram but observes freeRam parameter in cfg.json");
@@ -8,7 +11,9 @@ function printusage(ns) {
     return;
 }
  
-/** @param {NS} ns */
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 // pass host as arg[0] (non-optional)
 // run from home only - returns error if not
 export async function main(ns) {

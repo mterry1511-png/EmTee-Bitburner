@@ -1,7 +1,9 @@
 import * as targeting from "./lib/targeting.js";
 import { getAvailableThreads } from "./lib/util.js";
 
-/** @param {NS} ns */
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
     const scriptHost = ns.args[0] ?? "home";
     const targetMode = ns.args[1] ?? "best";
@@ -9,7 +11,12 @@ export async function main(ns) {
     await start(ns, scriptHost, targetMode, target);
 }
 
-/** @param {NS} ns */
+/**
+ * @param {NS} ns - The Netscript API object
+ * @param {string} scriptHost - The host server to run hack operations from
+ * @param {string} targetMode - The targeting mode (best, ranked, hacklvl, easy)
+ * @param {string} [target=null] - Optional target server hostname
+ */
 export async function start(ns, scriptHost, targetMode, target = null) {
     // handle args
     target = target ?? targeting.getTarget(ns, targetMode);
@@ -76,7 +83,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
         // If security is above threshold, weaken it
         if (currentSec > securityThreshActual) {
-            const script = "weaken.js";
+            const script = "./hgw/weaken.js";
             const securityToReduce = currentSec - securityThreshActual;
             const maxWeakenThreads = Math.ceil(securityToReduce / weakenPerThread);
             const neededThreads = maxWeakenThreads - runningThreads(script);
@@ -94,7 +101,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
         // If money is below threshold, grow it
         else if (currentMoney < moneyThresh) {
-            const script = "grow.js";
+            const script = "./hgw/grow.js";
             const safeMoney = Math.max(currentMoney, 1);
             const growMultiplier = (maxMoney * cfg.moneyThresh) / safeMoney;
             const maxGrowThreads = Math.ceil(ns.growthAnalyze(target, growMultiplier));
@@ -114,7 +121,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
         // Otherwise, hack it
         else {
-            const script = "hack.js";
+            const script = "./hgw/hack.js";
             const targetHackFraction = cfg.targetHackFraction ?? 0.05;
             const maxHackThreads = Math.max(1, Math.floor(targetHackFraction / ns.hackAnalyze(target)));
             const neededThreads = maxHackThreads - runningThreads(script);

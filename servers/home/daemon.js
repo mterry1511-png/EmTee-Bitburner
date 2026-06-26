@@ -1,4 +1,5 @@
 import { main as refresh } from "./refresh.js";
+import { main as upgradeClouds } from "./cloud/upgradeclouds.js";
 
 /**
  * @param {NS} ns
@@ -7,13 +8,16 @@ import { main as refresh } from "./refresh.js";
  * @param {number|null} pid - If provided, checks by PID instead of script name
  * @returns {boolean} Whether the script is currently running on the target server
  */
-// Returns true/false if script is running. default behaviour by scriptname
 export function ensureRunning(ns, script, cloudName, pid = null) {
     let running = false;
     switch (pid) {
         case null:
             if (!ns.isRunning(script, cloudName, cloudName)) {
                 running = false;
+                if (script == "cloudpush.js"){
+                    ns.scp(script, cloudName, "home");
+                }
+                ns.exec(script, cloudName, 1, cloudName);
             }
             else {
                 running = true;
@@ -22,6 +26,9 @@ export function ensureRunning(ns, script, cloudName, pid = null) {
 
         default:
             // placeholder to add alt behaviour pid check code
+            //
+            //
+            //
             break;
     }
     return running;
@@ -29,17 +36,46 @@ export function ensureRunning(ns, script, cloudName, pid = null) {
 
 /** @param {NS} ns */
 export async function main(ns) {
-    while (true) {
-        const clouds = JSON.parse(ns.read("./data/clouds.json"));
-        for (const cloudName in clouds) {
+    // defined outside the loop to allow ns.atexit culling
+    let clouds;
+    let watched;
 
-            if (!ns.isRunning("cloudpush.js", cloudName, cloudName)) {
-                ns.scp("cloudpush.js", cloudName, "home");
-                ns.exec("cloudpush.js", cloudName, 1, cloudName);
+    ns.ui.openTail();
+
+    ns.atExit(() => {
+        for (const cloudName in clouds) {
+            for (const script of watched) {
+                ns.kill(script, cloudName, cloudName);
             }
         }
+});
+
+    while (true) {
+        // load config
+        const cfg = JSON.parse(ns.read("./data/cfg.json"));
+
+        // Clouds list - maintained in .json and by buyserver.js
+        clouds = JSON.parse(ns.read("./data/clouds.json"));
+
+        // List of scripts to be watched - maintained in .json
+        watched = cfg.watchedScripts;
+
+        // refresh network, autonuke+root, update networks.json
         await refresh(ns, true);
-        await ns.sleep(5000);
+
+        // upgrade clouds up to mincloudRAM if upgrade costs less than maxPercSpend (both in cfg.json)
+        await upgradeClouds(ns);
+
+        // main loop
+        for (const cloudName in clouds) {
+            for (const script of watched) {
+                ensureRunning(ns, script, cloudName);
+                await ns.sleep(50);
+            }
+        }
+
+        // set in cfg.json
+        await ns.sleep(cfg.daemonSleep);
     }
 }
 

@@ -1,22 +1,29 @@
 {
+    "daemonSleep": 5000,
     "cloudPushSleep": 5000,
     "securityThresh": 2,
     "moneyThresh": 0.88,
     "targetHackFraction": 0.1,
     "targetRequirements": {
-        "minHackChance": 0.75,
-        "minMoney": 1000000,
-        "minServerGrowth": 10,
+        "minHackChance": 0.5,
+        "minMoney": 10000,
+        "minServerGrowth": 1,
         "minDispatchServers": 8,
         "maxDispatchServers": 100,
         "excludeServers": ["home", "cloud", "cloud-0", "cloud-1", "cloud-2", "cloud-3", "cloud-4", "cloud-5", "cloud-6", "cloud-7", "cloud-8", "cloud-9", "cloud-10", "cloud-11", "cloud-12", "cloud-13", "cloud-14", "cloud-15", "cloud-16", "cloud-17", "cloud-18", "cloud-19", "cloud-20", "cloud-21", "cloud-22", "cloud-23", "cloud-24", "cloud-25"]
     },
-    "serverRefresh": 10000,
     "purchaseConfig": {
         "maxPercSpend": 40,
-        "mincloudRAM": 1024,
-        "targetCloudServs": 5
+        "minCloudRam": 262144, 
+        "targetCloudServs": 2,
+        "cloudNamePresets": [ "orion", "carina", "pillars", "blake",
+    "lagoon", "eagle", "helix", "crab", "butterfly",
+    "rosette", "veil", "boomerang", "eskimo", "catseye",
+    "ring", "dumbbell", "omega", "trifid", "pelican",
+    "flaming", "witch", "thor", "pacman", "soul",
+    "heart", "cone", "fox-fur", "tulip", "bubble"]
     },
     "leaveRamFree": 15,
-    "deployToHome": false
+    "deployToHome": false,
+    "watchedScripts" : ["cloudpush.js"]
     }

@@ -11,14 +11,23 @@ export async function main(ns) {
 
 }
 
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 function printUsage() {
 
 }
 
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 function watch() {
 
 }
 
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 function status() {
 
 }

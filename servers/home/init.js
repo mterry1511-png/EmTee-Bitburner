@@ -20,6 +20,9 @@ export async function main(ns) {
 
     const results = "";
 
+    // Fun little countdown nonsense
+    await nonsense(ns);   
+    
     // run scanner to build "/data/networks.json"
     scanNetwork(ns, true);
 
@@ -34,6 +37,7 @@ export async function main(ns) {
     // Refresh "/data/networks.json"
     scanNetwork(ns, true);
 
+    ns.kill("daemon.js", "home");
     ns.run("daemon.js",1);
 
     // exec buyRAM
@@ -48,29 +52,29 @@ export async function main(ns) {
 
     // exec watch
     
-    await printResults(ns, results);
+    await printResults(ns, results, cfg);
 }
 
 
-async function printResults(ns, results) {
+async function printResults(ns, results, cfg) {
     // check results and print accordingly (NEED TO DEFINE)
     // Consider putting all watch into a single watch.js?
 
-    // Fun little countdown nonsense
-    await nonsense(ns);
+
 
     // Print results
-    ns.tprint("\n\nInitialisation:\n");
-    ns.tprint("  Network scanned and stored in ./data/networks.json\n");
-    ns.tprint("  AutoNuked all servers\n");
     // ns.tprint("  Executed servWatch for automated nuking\n");
     // ns.tprint("  Executed ramWatch for automated RAM purchasing\n");
     // ns.tprint("  Executed hacknetWatch for automated hacknet purchasing \n");
     // ns.tprint("  Executed augWatch for automated augmentation purchasing \n");
     // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
-    ns.tprint("daemon.js running");
-    ns.tprint("run dispatch.js to get started");
-    ns.tprint("\n\n");
+    ns.tprint("\n\nInitialisation:\n");
+    ns.tprint("  Network scanned and stored in ./data/networks.json\n");
+    ns.tprint("  Cloud servers updated and stored in ./data/clouds.json\n");
+    ns.tprint("  AutoNuked all servers\n");
+    ns.tprint("  daemon.js running - watching " + cfg.watchedScripts);
+    ns.tprint("  Remember to buy TOR router!");
+    ns.tprint("  ... run dispatch.js to get started!");
 }
 
 

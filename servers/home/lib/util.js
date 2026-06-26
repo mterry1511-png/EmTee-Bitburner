@@ -1,6 +1,8 @@
 import { scanNetwork } from "../scanner.js";
 
-/** @param {NS} ns */
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
     //Determine function
     const argmap = ns.args.map(a => a.toLowerCase());
@@ -23,6 +25,9 @@ export async function main(ns) {
 }
 
 // Printusage function
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 function printusage(ns) {
     ns.tprint("Usage: run util.js [targetServer] [FUNCTION]");
     ns.tprint("Example: run util.js n00dles --openports");
@@ -122,6 +127,12 @@ export function autoNuke(ns, targetServer, quiet = false) {
 // Example usage: getAvailableThreads(ns, home, "hack.js");
 // Example gets the script RAM for hack.js, then calculates how many threads of hack.js could run on home based on its available RAM
 // Also use on cloud servers
+/**
+ * @param {NS} ns - The Netscript API object
+ * @param {string} scriptHost - The host server to check available threads on
+ * @param {string} script - The script name to calculate threads for
+ * @returns {number} The number of available threads
+ */
 export function getAvailableThreads(ns, scriptHost, script) {
     const availableRam = (ns.getServerMaxRam(scriptHost) - JSON.parse(ns.read("./data/cfg.json")).leaveRamFree - ns.getServerUsedRam(scriptHost));       // always leaves space free - set in cfg.json
     const scriptRam = ns.getScriptRam(script, scriptHost)

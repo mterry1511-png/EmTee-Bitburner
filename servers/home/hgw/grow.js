@@ -1,10 +1,10 @@
-/** @param {NS} ns */
-
-// called from deployer.js only
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
     // Passed from deployer
     const target = ns.args[0];
 
-    //hack
-    await ns.hack(target);
+    // grow
+    await ns.grow(target);
 }

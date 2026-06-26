@@ -16,6 +16,9 @@ export async function main(ns) {
 
 
 // printusage function
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 function printusage(ns) {
     ns.tprint("Usage: run scanner.js - use from home only");
     ns.tprint("Pass argument 0 for default or 1 for cloud")
@@ -25,6 +28,10 @@ function printusage(ns) {
 }
 
 // Scans the network and writes all server information to networks.json
+/**
+ * @param {NS} ns - The Netscript API object
+ * @param {boolean} [quiet=false] - Whether to suppress output messages
+ */
 export async function scanNetwork(ns, quiet = false) {
     // set silent if -q specified
     quiet = quiet || ns.args.includes("-q");
@@ -115,6 +122,10 @@ export async function scanNetwork(ns, quiet = false) {
 }
 
 // Scans all cloud servers and writes cloud information to clouds.json
+/**
+ * @param {NS} ns - The Netscript API object
+ * @param {boolean} [quiet=false] - Whether to suppress output messages
+ */
 export async function scanCloud(ns, quiet = false) {
     // set silent if -q specified
     quiet = quiet || ns.args.includes("-q");

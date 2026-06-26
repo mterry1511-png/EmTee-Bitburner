@@ -1,13 +1,20 @@
 import { scanNetwork } from "../scanner.js";
 
 // Normal usage: Call getTarget directly. See targetingREADME.txt for full usage.
-/** @param {NS} ns */
+/**
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
     const mode = ns.args[0];
     const targetHostname = getTarget(ns, mode);
     return (targetHostname);
 }
 
+/**
+ * @param {NS} ns - The Netscript API object
+ * @param {string} mode - The targeting mode (best, ranked, hacklvl, easy)
+ * @returns {string|array} The target hostname or array of hostnames based on mode
+ */
 export function getTarget(ns, mode) {
     // Select mode based on argument passed
     switch (mode) {
@@ -64,6 +71,12 @@ export function getTarget(ns, mode) {
 }
 
 // prints to terminal and log depending on target and mode
+/**
+ * @param {NS} ns - The Netscript API object
+ * @param {string} target - The hostname of the target server
+ * @param {string} mode - The targeting mode (best, hacklvl, easy)
+ * @param {number} [moneyPerSec] - The money per second for this target
+ */
 function printTarget(ns, target, mode, moneyPerSec) {
     switch (mode) {
         case "best": { ns.print(target + " was selected based on the highest money per second at threshold."); break; }
@@ -80,6 +93,10 @@ function printTarget(ns, target, mode, moneyPerSec) {
 // Returns hostname of a server that we have root access to 
 // with the highest hackable level.
 // DOESNT WORK YET 
+/**
+ * @param {NS} ns - The Netscript API object
+ * @returns {object} Object with hostname, moneyPerSec, and requiredHackingSkill
+ */
 function getBestHackLvlTarget(ns) {
 
     // // Refresh "/data/networks.json" then loads servers []
@@ -180,6 +197,10 @@ function getBestHackLvlTarget(ns) {
 
 // Returns hostname of a server that we have root access to
 // with the highest expected value per second (moneyMax * hackChance / hackTime)
+/**
+ * @param {NS} ns - The Netscript API object
+ * @returns {array} Array of target objects ranked by money per second
+ */
 function getBestMoney(ns) {
 
     // // Refresh "/data/networks.json" then loads servers []
@@ -286,6 +307,11 @@ function getBestMoney(ns) {
 }
 
 // Called by deployer for security check
+/**
+ * @param {NS} ns - The Netscript API object
+ * @param {string} hostname - The hostname of the target server
+ * @returns {number|null} The minimum difficulty of the server, or null if not found
+ */
 export function getMinDifficulty(ns, hostname) {
     const servers = JSON.parse(ns.read("data/networks.json"));
     const serverData = servers.find(s => s.hostname === hostname);
