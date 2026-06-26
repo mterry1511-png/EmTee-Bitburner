@@ -16,14 +16,14 @@ export async function main(ns) {
     const cfg = JSON.parse(ns.read("./data/cfg.json"));
 
     // Load config - max servers
-    const maxServers = cfg.maxDispatchServers;
+    const maxServers = cfg.targetRequirements.maxDispatchServers;
     if (!maxServers || maxServers < 1) {
         ns.tprint("Error: maxDispatchServers not set or invalid in cfg.json. Exiting.");
         return;
     }
 
     // Load config - min servers
-    const minServers = cfg.minDispatchServers ?? 1;
+    const minServers = cfg.targetRequirements.minDispatchServers ?? 1;
     const allTargets = targeting.getTarget(ns, "ranked");
 
     //Trim targets arr if required

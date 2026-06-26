@@ -52,6 +52,7 @@ export async function main(ns) {
 }
 
 // runs on cloud server 
+
 async function buyrep(ns, host) {
     // load config
     const cfg = JSON.parse(ns.read("./data/cfg.json"));
