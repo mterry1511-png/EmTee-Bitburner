@@ -1,5 +1,5 @@
 import { scanNetwork, scanCloud } from "../scanner.js";
-import { minBuy } from "../buycloud.js";
+import { minBuy } from "./buycloud.js";
 
 /**
  * Buys servers up to the targetCloudServs
@@ -33,7 +33,6 @@ export async function main(ns) {
         }
 
         // execute buy
-        ns.print(randomName);
         await minBuy(ns, randomName);
         clouds = JSON.parse(ns.read("/data/clouds.json")); // re-read after each buy
         await ns.sleep(1000);

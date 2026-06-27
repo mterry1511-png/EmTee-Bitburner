@@ -21,3 +21,10 @@ Watched scripts run on the cloud server, not home. They should be self-contained
 ensureRunning(ns, script, cloudName, pid = null)
 ```
 The `pid` parameter is a placeholder for future PID-based process checking and is not yet implemented. Leave it unused for now.
+
+
+
+Cloud functions: (Based on the ordering of indexing in clouds.json)
+1. buyrep.js only
+2. dispatch.js (pre-batching)
+3. free

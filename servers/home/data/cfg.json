@@ -8,8 +8,8 @@
         "minHackChance": 0.5,
         "minMoney": 10000,
         "minServerGrowth": 1,
-        "minDispatchServers": 1,
-        "maxDispatchServers": 5,
+        "minDispatchServers": 5,
+        "maxDispatchServers": 30,
         "excludeServers": [
             "home",
             "cloud"
@@ -21,9 +21,9 @@
         "cloudpush.js"
     ],
     "purchaseConfig": {
-        "maxPercSpend": 40,
-        "minCloudRam": 64,
-        "targetCloudServs": 2,
+        "maxPercSpend": 80,
+        "minCloudRam": 7688,
+        "targetCloudServs": 3,
         "cloudNamePresets": [
             "orion",
             "carina",
@@ -111,7 +111,7 @@
             "monkey-head",
             "horseshoe",
             "barnard",
-            "thor-helmet",
+            "thor",
             "seyfert",
             "cygnus",
             "puppis",

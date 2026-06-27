@@ -45,7 +45,7 @@ export async function main(ns) {
     ns.ui.openTail();
     ns.ui.setTailMinimized(false); // true: min, false: max
     ns.ui.moveTail(1390,0);
-    ns.ui.resizeTail(300, 450);
+    ns.ui.resizeTail(300, 445);
 
     // close all children when killed
     ns.atExit(() => {

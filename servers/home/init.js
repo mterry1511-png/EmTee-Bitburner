@@ -74,7 +74,7 @@ async function printResults(ns, results, cfg) {
     ns.tprint("  AutoNuked all servers\n");
     ns.tprint("  daemon.js running - watching " + cfg.watchedScripts);
     ns.tprint("  Remember to buy TOR router!");
-    ns.tprint("  ... run dispatch.js to get started!");
+    ns.tprint("  ... run go.js or dispatch.js to get started!");
 }
 
 
