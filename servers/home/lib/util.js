@@ -134,7 +134,7 @@ export function autoNuke(ns, targetServer, quiet = false) {
  * @returns {number} The number of available threads
  */
 export function getAvailableThreads(ns, scriptHost, script) {
-    const availableRam = (ns.getServerMaxRam(scriptHost) - JSON.parse(ns.read("./data/cfg.json")).leaveRamFree - ns.getServerUsedRam(scriptHost));       // always leaves space free - set in cfg.json
+    const availableRam = (ns.getServerMaxRam(scriptHost) - JSON.parse(ns.read("/data/cfg.json")).leaveRamFree - ns.getServerUsedRam(scriptHost));       // always leaves space free - set in cfg.json
     const scriptRam = ns.getScriptRam(script, scriptHost)
     return Math.floor(availableRam / scriptRam);
 }

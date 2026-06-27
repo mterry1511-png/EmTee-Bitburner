@@ -56,7 +56,7 @@ async function buy(ns, newCloudName) {
             ns.print("Bought server " + newCloudName + " with " + affordableram + "GB of RAM for $" + ns.cloud.getServerCost(affordableram) + ". Remaining money: $" + ns.getPlayer().money);
 
             // add cloud server to JSON
-            const servs = JSON.parse(ns.read("./data/clouds.json"));           // write clouds/json to an obj
+            const servs = JSON.parse(ns.read("/data/clouds.json"));           // write clouds/json to an obj
 
             // add newly purchased server
             servs[newCloudName] = {
@@ -64,7 +64,7 @@ async function buy(ns, newCloudName) {
             };
 
             // write updated file
-            ns.write("./data/clouds.json", JSON.stringify(servs), "w");
+            ns.write("/data/clouds.json", JSON.stringify(servs), "w");
             
             // cloudpush.js
             // ns.exec("cloudpush.js", "home", 1, newCloudName);
@@ -81,26 +81,27 @@ async function buy(ns, newCloudName) {
  * @param {NS} ns - The Netscript API object
  * @param {string} newCloudName - The name for the new cloud server
  */
-async function minBuy(ns, newCloudName) {
-    // always buys 32gb (small) server
+export async function minBuy(ns, newCloudName) {
+    // always buys 2gb (small) server
     if (!(newCloudName)) {
         newCloudName = "cloud";
     }
-
+        
     // if we can't afford 
-    while (ns.cloud.getServerCost(32) > ns.getPlayer().money) {
+    while (ns.cloud.getServerCost(2) > ns.getPlayer().money) {
         // wait (should be fast!)
-        await ns.sleep(1000);
+        await ns.sleep(5000);
+        ns.print("Can't afford server - waiting for player money...")
     }
 
-    // purchase 32gb
-    newCloudName = ns.cloud.purchaseServer(newCloudName.toString(), 32);
+    // purchase 2gb
+    newCloudName = ns.cloud.purchaseServer(newCloudName.toString(), 2);
 
     // print results to terminals
-    ns.print("Bought server " + newCloudName + " with 32GB of RAM");
+    ns.print("Bought server " + newCloudName + " with 2GB of RAM");
 
     // add cloud server to JSON
-    const servs = JSON.parse(ns.read("./data/clouds.json"));           // write clouds/json to an obj
+    const servs = JSON.parse(ns.read("/data/clouds.json"));           // write clouds/json to an obj
 
     // add newly purchased server
     servs[newCloudName] = {
@@ -108,7 +109,7 @@ async function minBuy(ns, newCloudName) {
     };
 
     // write updated file
-    ns.write("./data/clouds.json", JSON.stringify(servs), "w");
+    ns.write("/data/clouds.json", JSON.stringify(servs), "w");
 
     // cloudpush.js
     // ns.exec("cloudpush.js", "home", 1, newCloudName);

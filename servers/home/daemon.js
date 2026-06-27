@@ -40,8 +40,14 @@ export async function main(ns) {
     let clouds;
     let watched;
 
-    ns.ui.openTail();
 
+    // open tail by default
+    ns.ui.openTail();
+    ns.ui.setTailMinimized(false); // true: min, false: max
+    ns.ui.moveTail(1390,0);
+    ns.ui.resizeTail(300, 450);
+
+    // close all children when killed
     ns.atExit(() => {
         for (const cloudName in clouds) {
             for (const script of watched) {
@@ -52,10 +58,10 @@ export async function main(ns) {
 
     while (true) {
         // load config
-        const cfg = JSON.parse(ns.read("./data/cfg.json"));
+        const cfg = JSON.parse(ns.read("/data/cfg.json"));
 
         // Clouds list - maintained in .json and by buyserver.js
-        clouds = JSON.parse(ns.read("./data/clouds.json"));
+        clouds = JSON.parse(ns.read("/data/clouds.json"));
 
         // List of scripts to be watched - maintained in .json
         watched = cfg.watchedScripts;

@@ -42,12 +42,11 @@ export async function main(ns) {
     }
 
     // if valid server, exec on that host
-    const clouds = JSON.parse(ns.read("./data/clouds.json"));
+    const clouds = JSON.parse(ns.read("/data/clouds.json"));
     if (Object.hasOwn(clouds, host)) {
         ns.exec("buyrep.js", host, 1, host);
         ns.tprint("Executed buyrep on " + host);
     }
-
 
     else {
         ns.tprint("ERROR: Invalid host target - terminated");
@@ -60,7 +59,7 @@ export async function main(ns) {
 
 async function buyrep(ns, host) {
     // load config
-    const cfg = JSON.parse(ns.read("./data/cfg.json"));
+    const cfg = JSON.parse(ns.read("/data/cfg.json"));
 
     // default for error catching later
     let threads = 1;

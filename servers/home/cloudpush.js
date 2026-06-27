@@ -19,7 +19,7 @@ export async function main(ns) {
 
     while (true) {
         await pushScripts(ns, targetCloud);
-        const cloudPushSleep = JSON.parse(ns.read("./data/cfg.json")).cloudPushSleep ?? 5000;
+        const cloudPushSleep = JSON.parse(ns.read("/data/cfg.json")).cloudPushSleep ?? 5000;
         await ns.sleep(cloudPushSleep);
     }
 }

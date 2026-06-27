@@ -16,7 +16,7 @@ export async function main(ns) {
     // ns.disableLog("getHostname");
 
     // import config file
-    const cfg = JSON.parse(ns.read("./data/cfg.json"));
+    const cfg = JSON.parse(ns.read("/data/cfg.json"));
 
     const results = "";
 
@@ -27,7 +27,7 @@ export async function main(ns) {
     scanNetwork(ns, true);
 
     // write full server information to servers
-    const servers = JSON.parse(ns.read("./data/networks.json"));
+    const servers = JSON.parse(ns.read("/data/networks.json"));
 
     // exec autoNuke on all servers
     for (const targetServer of servers) {

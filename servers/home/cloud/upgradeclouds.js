@@ -1,3 +1,6 @@
+import { scanNetwork, scanCloud } from "../scanner.js";
+import { minBuy } from "../buycloud.js";
+
 /**
  * Buys servers up to the targetCloudServs
  * Upgrades all cloud servers to at least the minimum RAM defined in cfg.json,
@@ -6,9 +9,16 @@
  * @param {NS} ns - The Netscript API object
  */
 export async function main(ns) {
-    const cfg = JSON.parse(ns.read("./data/cfg.json"));
-    let clouds = JSON.parse(ns.read("./data/clouds.json"));
-
+    const cfg = JSON.parse(ns.read("/data/cfg.json"));
+    
+    // load clouds.json
+    let clouds;
+    try {
+        clouds = JSON.parse(ns.read("/data/clouds.json"));
+    } catch {
+        ns.tprint("clouds.json is empty or malformed. Run scanner first.");
+        return;
+    }
     // round minCloudRam up to nearest power of 2, capped at max purchasable
     const targetRam = Math.min(Math.pow(2, Math.floor(Math.log2(cfg.purchaseConfig.minCloudRam))), 1048576);
 
@@ -23,12 +33,16 @@ export async function main(ns) {
         }
 
         // execute buy
-        ns.exec("./buycloud.js", "home", 1,  randomName, 1);
-        await ns.sleep(100);
-
-        // update clouds
-        clouds = JSON.parse(ns.read("./data/clouds.json"));
+        ns.print(randomName);
+        await minBuy(ns, randomName);
+        clouds = JSON.parse(ns.read("/data/clouds.json")); // re-read after each buy
+        await ns.sleep(1000);
     }
+
+    // refresh json and clouds var before upgrading 
+    scanNetwork(ns, true);    //update networks
+    scanCloud(ns, true);    // update json
+    clouds = JSON.parse(ns.read("/data/clouds.json"));
 
     // upgrade behaviour
     for (const cloud in clouds) {
@@ -44,7 +58,7 @@ export async function main(ns) {
 
                     // update json
                     clouds[cloud].maxRam = targetRam;
-                    ns.write("./data/clouds.json", JSON.stringify(clouds), "w");
+                    ns.write("/data/clouds.json", JSON.stringify(clouds), "w");
                 }
             }
             else {

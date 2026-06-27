@@ -1,11 +1,12 @@
 /** @param {NS} ns */
 // Pass arg[0] 0 for default or 1 for cloud only
 export async function main(ns) {
-    if (!args[0]) {
+    const mode = ns.args[0] ?? null;
+    if (mode == null) {
         scanNetwork(ns);
         scanCloud(ns);
     }
-    else if (args[0] == 1) {
+    else if (mode == 1) {
         scanCloud(ns);
     }
     else {
@@ -107,7 +108,7 @@ export async function scanNetwork(ns, quiet = false) {
         // });
     }
     // Then write the custom networks array to networks.json // Overwrites the json completely
-    ns.write("./data/networks.json", JSON.stringify(networks), "w");
+    ns.write("/data/networks.json", JSON.stringify(networks), "w");
 
     //print all to log for fun
     if (!quiet) {
@@ -142,7 +143,7 @@ export async function scanCloud(ns, quiet = false) {
     }
 
     // add server pairs if cloud
-    const network = JSON.parse(ns.read("./data/networks.json"));
+    const network = JSON.parse(ns.read("/data/networks.json"));
     let clouds = {};
 
     // loop to add server pairs if cloud
@@ -158,7 +159,7 @@ export async function scanCloud(ns, quiet = false) {
 
     }
     // write updated arr to file
-    ns.write("./data/clouds.json", JSON.stringify(clouds), "w");
+    ns.write("/data/clouds.json", JSON.stringify(clouds), "w");
 }
 
 

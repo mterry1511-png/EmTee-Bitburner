@@ -15,7 +15,7 @@ export async function main(ns) {
     }
 
     // Load config
-    const cfg = JSON.parse(ns.read("./data/cfg.json"));
+    const cfg = JSON.parse(ns.read("/data/cfg.json"));
 
     // Load config - max servers
     const maxServers = cfg.targetRequirements.maxDispatchServers;

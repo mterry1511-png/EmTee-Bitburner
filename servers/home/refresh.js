@@ -19,7 +19,7 @@ export async function main(ns, quiet = false) {
     scanNetwork(ns, true);
 
     // write full server information to servers
-    const servers = JSON.parse(ns.read("./data/networks.json"));
+    const servers = JSON.parse(ns.read("/data/networks.json"));
 
     // exec autoNuke on all servers
     for (const targetServer of servers) {

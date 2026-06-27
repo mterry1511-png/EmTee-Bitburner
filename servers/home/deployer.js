@@ -23,7 +23,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
 
     // load config
-    const cfg = JSON.parse(ns.read("./data/cfg.json"));
+    const cfg = JSON.parse(ns.read("/data/cfg.json"));
     const maxMoney = ns.getServerMaxMoney(target);
     const moneyThresh = cfg.moneyThresh * maxMoney;
 
