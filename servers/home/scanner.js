@@ -18,6 +18,7 @@ export async function main(ns) {
 
 // printusage function
 /**
+ * Prints scanner usage instructions.
  * @param {NS} ns - The Netscript API object
  */
 function printusage(ns) {
@@ -30,6 +31,7 @@ function printusage(ns) {
 
 // Scans the network and writes all server information to networks.json
 /**
+ * Scans the reachable network and stores server metadata to networks.json.
  * @param {NS} ns - The Netscript API object
  * @param {boolean} [quiet=false] - Whether to suppress output messages
  */
@@ -124,6 +126,7 @@ export async function scanNetwork(ns, quiet = false) {
 
 // Scans all cloud servers and writes cloud information to clouds.json
 /**
+ * Collects purchased cloud servers and writes them to clouds.json.
  * @param {NS} ns - The Netscript API object
  * @param {boolean} [quiet=false] - Whether to suppress output messages
  */

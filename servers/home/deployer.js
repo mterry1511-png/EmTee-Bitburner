@@ -2,6 +2,7 @@ import * as targeting from "./lib/targeting.js";
 import { getAvailableThreads } from "./lib/util.js";
 
 /**
+ * Entry point that starts a deployer against the requested host and mode.
  * @param {NS} ns - The Netscript API object
  */
 export async function main(ns) {
@@ -12,6 +13,7 @@ export async function main(ns) {
 }
 
 /**
+ * Runs the main loop that weakens, grows, or hacks a target as needed.
  * @param {NS} ns - The Netscript API object
  * @param {string} scriptHost - The host server to run hack operations from
  * @param {string} targetMode - The targeting mode (best, ranked, hacklvl, easy)
@@ -143,6 +145,16 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 }
 
 // Executes the given script on scriptHost targeting target
+/**
+ * Launches a single worker script on the chosen host and tracks its PID.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} target - The hostname of the target server
+ * @param {number} threads - The number of worker threads to launch
+ * @param {string} script - The worker script path to execute
+ * @param {string} scriptHost - The server to run the worker on
+ * @param {Array<object>} childArr - The currently running child process records
+ * @param {object} state - Shared execution state for waiting and control flow
+ */
 export async function execute(ns, target, threads, script, scriptHost, childArr, state) {
     ns.disableLog("ALL");
 

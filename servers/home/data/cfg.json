@@ -9,7 +9,7 @@
         "minMoney": 10000,
         "minServerGrowth": 1,
         "minDispatchServers": 5,
-        "maxDispatchServers": 30,
+        "maxDispatchServers": 1,
         "excludeServers": [
             "home",
             "cloud"

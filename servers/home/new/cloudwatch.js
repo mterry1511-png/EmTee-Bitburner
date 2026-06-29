@@ -1,6 +1,9 @@
 //import ../
 
-/** @param {NS} ns */
+/**
+ * Evaluates whether to purchase or upgrade cloud servers based on the current budget.
+ * @param {NS} ns - The Netscript API object
+ */
 
 export async function start(ns) {
     // Script summary

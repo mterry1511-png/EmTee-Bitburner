@@ -1,6 +1,7 @@
 import * as targeting from "./lib/targeting.js";
 
 /**
+ * Dispatches deployer scripts to ranked or single targets based on the provided mode.
  * @param {NS} ns - The Netscript API object
  */
 export async function main(ns) {
@@ -19,6 +20,7 @@ export async function main(ns) {
 
     // Load config - max servers
     const maxServers = cfg.targetRequirements.maxDispatchServers;
+    ns.tprint(maxServers);
     if (!maxServers || maxServers < 1) {
         ns.tprint("Error: maxDispatchServers not set or invalid in cfg.json. Exiting.");
         return;
@@ -91,6 +93,7 @@ export async function main(ns) {
 
 
 /**
+ * Prints the dispatch script usage and supported targeting modes.
  * @param {NS} ns - The Netscript API object
  */
 function printUsage(ns) {

@@ -1,4 +1,7 @@
-/** @param {NS} ns */
+/**
+ * Repeatedly weaken, grow, and hack a target server using the provided target argument.
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
   var target = ns.args[0];
   var maxseclevel = ns.getServerMinSecurityLevel(target) + 5;

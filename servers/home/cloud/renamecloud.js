@@ -1,5 +1,6 @@
 
 /**
+ * Renames a cloud server and updates the cloud registry file.
  * @param {NS} ns - The Netscript API object. Terminal inputs are passed via ns.args[0] and ns.args[1].
  */
 export async function main(ns) {
@@ -25,6 +26,7 @@ export async function main(ns) {
 }
 
 /**
+ * Prints usage instructions for the renamecloud helper.
  * @param {NS} ns - The Netscript API object
  */
 export function printusage(ns) {

@@ -2,9 +2,10 @@ import { main as refresh } from "./refresh.js";
 import { main as upgradeClouds } from "./cloud/upgradeclouds.js";
 
 /**
- * @param {NS} ns
- * @param {string} script
- * @param {string} cloudName
+ * Ensures the requested script is running on the target cloud server.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} script - The script name to ensure is running
+ * @param {string} cloudName - The target cloud server hostname
  * @param {number|null} pid - If provided, checks by PID instead of script name
  * @returns {boolean} Whether the script is currently running on the target server
  */
@@ -34,7 +35,10 @@ export function ensureRunning(ns, script, cloudName, pid = null) {
     return running;
 }
 
-/** @param {NS} ns */
+/**
+ * Continuously refreshes the network and relaunches watched scripts on clouds.
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
     // defined outside the loop to allow ns.atexit culling
     let clouds;
@@ -44,7 +48,7 @@ export async function main(ns) {
     // open tail by default
     ns.ui.openTail();
     ns.ui.setTailMinimized(false); // true: min, false: max
-    ns.ui.moveTail(1390,0);
+    ns.ui.moveTail(1200,0);
     ns.ui.resizeTail(300, 445);
 
     // close all children when killed

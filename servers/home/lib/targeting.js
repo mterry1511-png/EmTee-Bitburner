@@ -2,6 +2,7 @@ import { scanNetwork } from "../scanner.js";
 
 // Normal usage: Call getTarget directly. See targetingREADME.txt for full usage.
 /**
+ * Selects a target based on the requested targeting mode.
  * @param {NS} ns - The Netscript API object
  */
 export async function main(ns) {
@@ -11,6 +12,7 @@ export async function main(ns) {
 }
 
 /**
+ * Chooses a target hostname or ranked list according to the requested mode.
  * @param {NS} ns - The Netscript API object
  * @param {string} mode - The targeting mode (best, ranked, hacklvl, easy)
  * @returns {string|array} The target hostname or array of hostnames based on mode
@@ -72,6 +74,7 @@ export function getTarget(ns, mode) {
 
 // prints to terminal and log depending on target and mode
 /**
+ * Prints a human-readable targeting result to the terminal.
  * @param {NS} ns - The Netscript API object
  * @param {string} target - The hostname of the target server
  * @param {string} mode - The targeting mode (best, hacklvl, easy)
@@ -94,6 +97,7 @@ function printTarget(ns, target, mode, moneyPerSec) {
 // with the highest hackable level.
 // DOESNT WORK YET 
 /**
+ * Finds the highest-level hackable target that satisfies the configured thresholds.
  * @param {NS} ns - The Netscript API object
  * @returns {object} Object with hostname, moneyPerSec, and requiredHackingSkill
  */
@@ -198,6 +202,7 @@ function getBestHackLvlTarget(ns) {
 // Returns hostname of a server that we have root access to
 // with the highest expected value per second (moneyMax * hackChance / hackTime)
 /**
+ * Ranks accessible servers by expected money-per-second.
  * @param {NS} ns - The Netscript API object
  * @returns {array} Array of target objects ranked by money per second
  */
@@ -308,6 +313,7 @@ function getBestMoney(ns) {
 
 // Called by deployer for security check
 /**
+ * Retrieves the minimum security level for a known target server.
  * @param {NS} ns - The Netscript API object
  * @param {string} hostname - The hostname of the target server
  * @returns {number|null} The minimum difficulty of the server, or null if not found

@@ -1,4 +1,5 @@
 /**
+ * Hack a target server using the deployer-provided target argument.
  * @param {NS} ns - The Netscript API object
  */
 

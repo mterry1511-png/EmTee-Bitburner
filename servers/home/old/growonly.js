@@ -1,4 +1,7 @@
-/** @param {NS} ns */
+/**
+ * Continuously grows the supplied target server.
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
   var target = ns.args[0];
 

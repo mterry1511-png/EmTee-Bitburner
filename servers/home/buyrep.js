@@ -1,6 +1,7 @@
 import { getAvailableThreads } from "./lib/util.js";
 
 /**
+ * Prints usage instructions for the buyrep script.
  * @param {NS} ns - The Netscript API object
  */
 function printusage(ns) {
@@ -12,6 +13,7 @@ function printusage(ns) {
 }
  
 /**
+ * Runs the main entry point for the buyrep automation flow.
  * @param {NS} ns - The Netscript API object
  */
 // pass host as arg[0] (non-optional)
@@ -57,6 +59,11 @@ export async function main(ns) {
 
 // runs on cloud server 
 
+/**
+ * Continuously starts the share script on the target cloud host.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} host - The hostname of the cloud server to host the share worker on
+ */
 async function buyrep(ns, host) {
     // load config
     const cfg = JSON.parse(ns.read("/data/cfg.json"));

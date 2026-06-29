@@ -1,13 +1,13 @@
 EmTee's Bitburner v1.1
-Huge release. Fully usable and ready to smash the game. 
+Updated go.js args 1-6 for semi-automation of things
 
 Next steps:
-- Make upgradeclouds.js incrementally buy, if the required money to go up to the intended min RAM isn't affordableRam
 - add to daemon: 
     Hacknet buy script
     programs buy script (flags for dispatch relaunch)
     Relaunch dispatch.js every x time or on flag
-- Dashboard for cfg adjustment
+
+- Dashboard / ui for cfg adjustment
 - Dashboard for cloud servers status?????
 
 Future:
@@ -15,14 +15,41 @@ Future:
 - BIG batching hack code
 
 
+                 ``          
+             -odmmNmds:      
+           `hNmo:..-omNh.    
+           yMd`      `hNh    
+           mMd        oNm    
+           oMNo      .mM/    
+           `dMN+    -mM+     
+            -mMNo  -mN+      
+  .+-        :mMNo/mN/       
+:yNMd.        :NMNNN/        
+-mMMMh.        /NMMh`        
+ .dMMMd.       /NMMMy`       
+  `yMMMd.     /NNyNMMh`      
+   `sMMMd.   +Nm: +NMMh.     
+     oMMMm- oNm:   /NMMd.    
+      +NMMmsMm-     :mMMd.   
+       /NMMMm-       -mMMd.  
+        /MMMm-        -mMMd. 
+       `sMNMMm-        .mMmo 
+      `sMd:hMMm.        ./.  
+     `yMy` `yNMd`            
+    `hMs`    oMMy            
+   `hMh       sMN-           
+   /MM-       .NMo           
+   +MM:       :MM+           
+    sNNo-.`.-omNy`           
+     -smNNNNmdo-             
+        `..`                 s
 
 
 
 
 
 
-
-Older notes (needs cleaning up =)
+Older notes (needs cleaning up :) )
                                         Next Step: dispatch tweak
                                         Dispatch adjustment summary:
 

@@ -1,4 +1,5 @@
 /**
+ * Continuously pushes local scripts to a target cloud server.
  * @param {NS} ns - The Netscript API object
  */
 export async function main(ns) {
@@ -25,6 +26,7 @@ export async function main(ns) {
 }
 
 /**
+ * Copies scripts and JSON files to the specified cloud server.
  * @param {NS} ns - The Netscript API object
  * @param {string} targetCloud - The target cloud server to push scripts to
  */
@@ -36,6 +38,7 @@ export async function pushScripts(ns, targetCloud) {
 }
 
 /**
+ * Prints usage instructions for the cloud push helper.
  * @param {NS} ns - The Netscript API object
  */
 function printusage(ns) {

@@ -10,7 +10,7 @@ import { minBuy } from "./buycloud.js";
  */
 export async function main(ns) {
     const cfg = JSON.parse(ns.read("/data/cfg.json"));
-    
+
     // load clouds.json
     let clouds;
     try {

@@ -2,7 +2,10 @@
 import { scanNetwork } from "./scanner.js";
 import { autoNuke } from "./lib/util.js";
 
-/** @param {NS} ns */
+/**
+ * Initialises the automation environment by scanning and auto-nuking the network.
+ * @param {NS} ns - The Netscript API object
+ */
 export async function main(ns) {
 
     // Disable logging for ns functions
@@ -56,6 +59,12 @@ export async function main(ns) {
 }
 
 
+/**
+ * Prints a summary of the initialisation results to the terminal.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} results - The collected result output for display
+ * @param {object} cfg - The loaded configuration object
+ */
 async function printResults(ns, results, cfg) {
     // check results and print accordingly (NEED TO DEFINE)
     // Consider putting all watch into a single watch.js?
@@ -78,7 +87,10 @@ async function printResults(ns, results, cfg) {
 }
 
 
-/** @param {NS} ns */
+/**
+ * Plays a stylised boot animation sequence before the main initialisation work begins.
+ * @param {NS} ns - The Netscript API object
+ */
 async function nonsense(ns) {
     // Ultra-dramatic cyberpunk boot sequence for Bitburner terminal.
 

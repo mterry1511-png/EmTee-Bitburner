@@ -1,4 +1,5 @@
 /**
+ * Handles CLI arguments and dispatches the appropriate cloud server purchase workflow.
  * @param {NS} ns - The Netscript API object
  */
 export async function main(ns) {
@@ -24,6 +25,7 @@ export async function main(ns) {
 }
 
 /**
+ * Prints usage instructions for the cloud server purchasing script.
  * @param {NS} ns - The Netscript API object
  */
 function printusage(ns) {
@@ -36,6 +38,7 @@ function printusage(ns) {
 }
 
 /**
+ * Purchases the largest affordable cloud server and records it in the cloud registry.
  * @param {NS} ns - The Netscript API object
  * @param {string} newCloudName - The name for the new cloud server
  */
@@ -78,6 +81,7 @@ async function buy(ns, newCloudName) {
 }
 
 /**
+ * Purchases a fixed-size cloud server and records it in the cloud registry.
  * @param {NS} ns - The Netscript API object
  * @param {string} newCloudName - The name for the new cloud server
  */

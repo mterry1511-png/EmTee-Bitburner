@@ -7,7 +7,10 @@ import { autoNuke } from "./lib/util.js";
 
 // IDEA - later this can be turned into a controller which is timed, compares besttarget array and restarts deployer if the top cfg.maxDispatchServers entries changes 
 
-/** @param {NS} ns */
+/**
+ * Refreshes the network map, re-runs auto-nuke, and updates the cloud inventory.
+ * @param {NS} ns - The Netscript API object
+ */
 //doesn't take args by design
 export async function main(ns, quiet = false) {
     quiet = quiet || ns.args.includes("-q");

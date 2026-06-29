@@ -1,5 +1,7 @@
 /**
- * @param {NS} ns */
+ * Lightweight helper for reading and writing JSON-backed files through the Netscript API.
+ * @param {NS} ns - The Netscript API object
+ */
 class FileHandler {
     #file;
     #ns;
