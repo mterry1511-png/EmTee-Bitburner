@@ -1,9 +1,8 @@
 /**
- * @param {NS} ns
- * @param {string} targetServer
- * @param {number} moneyPercent
- * @param {number} minSecurityoffset
- * @param {boolean} debug*/
+ * Main entry point that continuously hacks/grows/weakens a target based on security and money thresholds.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 import { autoNuke } from "../lib/util.js";
 // Main
 export async function main(ns) {
@@ -39,7 +38,15 @@ export async function main(ns) {
     // Call infinite loop
     await loop(ns, targetServer, moneyThresh, securityThresh, debug);
 }
-// Infinite loop
+/**
+ * Infinite loop that continuously hacks/grows/weakens the target based on conditions.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} targetServer - The target server hostname
+ * @param {number} moneyThresh - Money threshold for hacking
+ * @param {number} securityThresh - Security threshold for weakening
+ * @param {boolean} debug - Enable debug logging
+ * @returns {Promise<void>}
+ */
 export async function loop(ns, targetServer, moneyThresh, securityThresh, debug) {
     //Counters
     let weakcount = 0;

@@ -1,55 +1,30 @@
 import { main as refresh } from "./refresh.js";
 import { main as upgradeClouds } from "./cloud/upgradeclouds.js";
-
-/**
- * Ensures the requested script is running on the target cloud server.
- * @param {NS} ns - The Netscript API object
- * @param {string} script - The script name to ensure is running
- * @param {string} cloudName - The target cloud server hostname
- * @param {number|null} pid - If provided, checks by PID instead of script name
- * @returns {boolean} Whether the script is currently running on the target server
- */
-export function ensureRunning(ns, script, cloudName, pid = null) {
-    let running = false;
-    switch (pid) {
-        case null:
-            if (!ns.isRunning(script, cloudName, cloudName)) {
-                running = false;
-                if (script == "cloudpush.js"){
-                    ns.scp(script, cloudName, "home");
-                }
-                ns.exec(script, cloudName, 1, cloudName);
-            }
-            else {
-                running = true;
-            }
-            break;
-
-        default:
-            // placeholder to add alt behaviour pid check code
-            //
-            //
-            //
-            break;
-    }
-    return running;
-}
+import { ensureRunning } from "./lib/util.js";
 
 /**
  * Continuously refreshes the network and relaunches watched scripts on clouds.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     // defined outside the loop to allow ns.atexit culling
     let clouds;
     let watched;
 
+    // close old daemon.js instances, excluding self
+    const processes = ns.ps("home");
+    for (const proc of processes) {
+        if (proc.filename === "daemon.js" && proc.pid !== ns.pid) {
+            ns.kill(proc.pid);
+        }
+    }
 
     // open tail by default
     ns.ui.openTail();
     ns.ui.setTailMinimized(false); // true: min, false: max
-    ns.ui.moveTail(1200,0);
-    ns.ui.resizeTail(300, 445);
+    ns.ui.moveTail(1470, 0);
+    ns.ui.resizeTail(250, 350);
 
     // close all children when killed
     ns.atExit(() => {
@@ -58,7 +33,7 @@ export async function main(ns) {
                 ns.kill(script, cloudName, cloudName);
             }
         }
-});
+    });
 
     while (true) {
         // load config
@@ -68,6 +43,7 @@ export async function main(ns) {
         clouds = JSON.parse(ns.read("/data/clouds.json"));
 
         // List of scripts to be watched - maintained in .json
+        // WARNING - all added scripts to watched must follow this args format (targethost as arg[0]).
         watched = cfg.watchedScripts;
 
         // refresh network, autonuke+root, update networks.json
@@ -76,13 +52,16 @@ export async function main(ns) {
         // upgrade clouds up to mincloudRAM if upgrade costs less than maxPercSpend (both in cfg.json)
         await upgradeClouds(ns);
 
-        // main loop
+        // main loop - check watched scripts on cloud servers 
         for (const cloudName in clouds) {
             for (const script of watched) {
                 ensureRunning(ns, script, cloudName);
                 await ns.sleep(50);
             }
         }
+
+        // hacknet auto buy
+        ensureRunning(ns, "buyhacknode.js", "home");
 
         // set in cfg.json
         await ns.sleep(cfg.daemonSleep);

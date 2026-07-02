@@ -1,13 +1,37 @@
 import * as targeting from "./lib/targeting.js";
+import { scanCloud } from "./scanner.js";
 
 /**
  * Dispatches deployer scripts to ranked or single targets based on the provided mode.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     // handle args
     const scriptHost = ns.args[0] ?? "home";
     const targetMode = ns.args[1] ?? "ranked";
+    const dupe = String(ns.args[2] ?? false).toLowerCase() === "true";
+
+    // update clouds
+    scanCloud(ns, true);
+    const clouds = JSON.parse(ns.read("/data/clouds.json"));    // load clouds.json
+
+    // Stops dispatch.js and deployer.js instances everywhere unless flagged for dupe (ns.args[2])
+if (!dupe) {
+    const killWatched = (host) => {
+        for (const proc of ns.ps(host)) {
+            if ((proc.filename === "dispatch.js" || proc.filename === "deployer.js") && proc.pid !== ns.pid) {
+                ns.kill(proc.pid);
+            }
+        }
+    };
+
+    for (const cloud in clouds) {
+        killWatched(cloud);
+    }
+    killWatched("home");
+}
+
 
     // pass for help
     if (ns.args.includes("help")) {
@@ -20,7 +44,7 @@ export async function main(ns) {
 
     // Load config - max servers
     const maxServers = cfg.targetRequirements.maxDispatchServers;
-    ns.tprint(maxServers);
+    // ns.tprint(maxServers);
     if (!maxServers || maxServers < 1) {
         ns.tprint("Error: maxDispatchServers not set or invalid in cfg.json. Exiting.");
         return;
@@ -37,7 +61,6 @@ export async function main(ns) {
         ns.tprint(`Error: Only ${allTargets.length} valid targets found, minimum is ${minServers}. Exiting.`);
         return;
     }
-
 
     // get target based on targetMode  - needed as array is returned in case of "ranked"
     if (targetMode === "ranked") {
@@ -95,6 +118,7 @@ export async function main(ns) {
 /**
  * Prints the dispatch script usage and supported targeting modes.
  * @param {NS} ns - The Netscript API object
+ * @returns {void}
  */
 function printUsage(ns) {
     ns.tprint("=== dispatch.js ===");

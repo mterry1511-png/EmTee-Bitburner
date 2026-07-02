@@ -5,16 +5,35 @@
 class FileHandler {
     #file;
     #ns;
+    /**
+     * Creates a FileHandler instance for managing JSON files.
+     * @param {NS} ns - The Netscript API object
+     * @param {string} file - The file path to manage
+     */
     constructor(ns, file) {
         this.#ns = ns;
         this.#file = file;
     }
+    /**
+     * Creates a new empty file.
+     * @returns {Promise<void>}
+     */
     async newFile() {
         await this.#ns.write(this.#file, "", "w");
     }
+    /**
+     * Writes JSON data to the file.
+     * @param {object} data - The data object to write
+     * @param {string} [mode="a"] - Write mode ("w" for write, "a" for append)
+     * @returns {Promise<void>}
+     */
     async write(data, mode = "a") {
         await this.#ns.write(this.#file, JSON.stringify(data), mode);
     }
+    /**
+     * Reads and parses JSON data from the file.
+     * @returns {Promise<object|array>} Parsed JSON object or empty array if file is empty
+     */
     async read() {
         let dataString = await this.#ns.read(this.#file);
         if (dataString.length > 1) {
@@ -25,6 +44,11 @@ class FileHandler {
         }
     }
 }
+/**
+ * Main entry point for JSON file handler testing.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 export async function main(ns) {
     let fileHandler = new FileHandler(ns, "test.txt");
 }

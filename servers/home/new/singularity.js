@@ -1,4 +1,8 @@
-/** @param {NS} ns */
+/**
+ * Entry point for singularity wrapper that dispatches various operations based on command.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 export async function main(ns) {
     const script = ns.getScriptName();
     const command = String(ns.args[0] ?? "help").toLowerCase();

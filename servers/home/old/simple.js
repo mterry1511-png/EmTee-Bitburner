@@ -1,11 +1,8 @@
-/** 
- * @param {NS} ns 
- * @param targetServer 
- * @param {number} moneyPercent
- * @param {number} minSecurityoffset
- * @param {boolean} debug*/
-
-// Main
+/**
+ * Main entry point that continuously hacks/grows/weakens a target based on security and money thresholds.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 export async function main(ns) {
   // Disable logging for ns functions
   ns.disableLog("disableLog");
@@ -46,7 +43,15 @@ export async function main(ns) {
   await loop(ns, targetServer, moneyThresh, securityThresh, debug);
 }
 
-// Infinite loop
+/**
+ * Infinite loop that continuously hacks/grows/weakens the target based on conditions.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} targetServer - The target server hostname
+ * @param {number} moneyThresh - Money threshold for hacking
+ * @param {number} securityThresh - Security threshold for weakening
+ * @param {boolean} debug - Enable debug logging
+ * @returns {Promise<void>}
+ */
 export async function loop(ns, targetServer, moneyThresh, securityThresh, debug) {
   //Counters
   let weakcount = 0;
@@ -94,7 +99,12 @@ export async function loop(ns, targetServer, moneyThresh, securityThresh, debug)
   }
 }
 
-// Autocomplete function
+/**
+ * Autocomplete function for simple.js arguments.
+ * @param {object} data - The autocomplete data object
+ * @param {array} args - Current command arguments
+ * @returns {array} Array of autocomplete suggestions
+ */
 export function autocomplete(data, args) {
   const servers = data.servers;
   const thresholdMoneyPct = "80"

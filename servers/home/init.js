@@ -1,10 +1,11 @@
 // import functions required
-import { scanNetwork } from "./scanner.js";
+import { scanNetwork, scanCloud } from "./scanner.js";
 import { autoNuke } from "./lib/util.js";
 
 /**
  * Initialises the automation environment by scanning and auto-nuking the network.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
 
@@ -28,6 +29,7 @@ export async function main(ns) {
     
     // run scanner to build "/data/networks.json"
     scanNetwork(ns, true);
+    scanCloud(ns, true);
 
     // write full server information to servers
     const servers = JSON.parse(ns.read("/data/networks.json"));
@@ -40,7 +42,7 @@ export async function main(ns) {
     // Refresh "/data/networks.json"
     scanNetwork(ns, true);
 
-    ns.kill("daemon.js", "home");
+    ns.kill("daemon.js", "home");   // this kill only works when daemon.js was ran with no args 
     ns.run("daemon.js",1);
 
     // exec buyRAM
@@ -64,6 +66,7 @@ export async function main(ns) {
  * @param {NS} ns - The Netscript API object
  * @param {string} results - The collected result output for display
  * @param {object} cfg - The loaded configuration object
+ * @returns {Promise<void>}
  */
 async function printResults(ns, results, cfg) {
     // check results and print accordingly (NEED TO DEFINE)
@@ -83,13 +86,14 @@ async function printResults(ns, results, cfg) {
     ns.tprint("  AutoNuked all servers\n");
     ns.tprint("  daemon.js running - watching " + cfg.watchedScripts);
     ns.tprint("  Remember to buy TOR router!");
-    ns.tprint("  ... run go.js or dispatch.js to get started!");
+    ns.tprint("  run cfgall.js then go.js or dispatch.js to get started!");
 }
 
 
 /**
  * Plays a stylised boot animation sequence before the main initialisation work begins.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 async function nonsense(ns) {
     // Ultra-dramatic cyberpunk boot sequence for Bitburner terminal.

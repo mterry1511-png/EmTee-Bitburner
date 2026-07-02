@@ -4,10 +4,11 @@ Updated go.js args 1-6 for semi-automation of things
 Next steps:
 - add to daemon: 
     Hacknet buy script
-    programs buy script (flags for dispatch relaunch)
-    Relaunch dispatch.js every x time or on flag
+    programs buy script  !! REQUIRES SINGULARITY (add flags for dispatch.js to relaunch)
+        Relaunch dispatch.js every x time or on flag
 
-- Dashboard / ui for cfg adjustment
+-set defaults in cfg scripts
+
 - Dashboard for cloud servers status?????
 
 Future:
@@ -117,3 +118,4 @@ Older notes (needs cleaning up :) )
                                             run buyserver.js <NEWSERVER>
                                             run cloudpush.js <NEWSERVER>
                                             run dispatch.js <NEWSERVER>
+

@@ -1,6 +1,7 @@
 /**
  * Repeatedly hacks a target until the target's security or money conditions break the loop.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
   var target = ns.args[0];

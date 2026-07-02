@@ -3,8 +3,8 @@
 /**
  * Evaluates whether to purchase or upgrade cloud servers based on the current budget.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
-
 export async function start(ns) {
     // Script summary
 // Check current money and calculate the spend budget (money * (maxPercSpend / 100))

@@ -3,6 +3,7 @@ import { scanNetwork } from "../scanner.js";
 /**
  * Dispatches utility actions based on command-line flags.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     //Determine function
@@ -29,6 +30,7 @@ export async function main(ns) {
 /**
  * Prints supported utility command usage.
  * @param {NS} ns - The Netscript API object
+ * @returns {void}
  */
 function printusage(ns) {
     ns.tprint("Usage: run util.js [targetServer] [FUNCTION]");
@@ -45,7 +47,8 @@ function printusage(ns) {
  * Attempts to open ports and gain root access on the target server.
  * @param {NS} ns - The Netscript API object
  * @param {string} targetServer - The hostname of the server to nuke
- * @param {boolean} quiet - Whether to suppress verbose logging
+ * @param {boolean} [quiet=false] - Whether to suppress verbose logging
+ * @returns {void}
  */
 export function autoNuke(ns, targetServer, quiet = false) {
     // set silent if -q specified
@@ -151,6 +154,7 @@ export function getAvailableThreads(ns, scriptHost, script) {
  * @param {string} key - The dotted path to the property to update
  * @param {*} value - The value to write to the target key
  * @param {string} [filepath="/data/cfg.json"] - The JSON file to edit
+ * @returns {void}
  */
 export function jsonEdit(ns, key, value, filepath = "/data/cfg.json") {
     // load json and catch synerrors
@@ -179,6 +183,47 @@ export function jsonEdit(ns, key, value, filepath = "/data/cfg.json") {
     ns.write(filepath, JSON.stringify(jsonObj), "w");
 }
 
+/**
+ * Ensures the requested script is running on the target cloud server.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} script - The script name to ensure is running
+ * @param {string} host - The target server hostname
+ * @param {number|null} [pid=null] - If provided, checks by PID instead of script name
+ * @returns {boolean} Whether the script is currently running on the target server
+ */
+export function ensureRunning(ns, script, host, pid = null) {
+    let running = false;
+    switch (pid) {
+        case null:
+            if (!ns.isRunning(script, host, host)) {
+                running = false;
+
+                // Specific behaviour for cloudpush.js as it does not transfer itself.
+                // all other scripts will be pushed by this script.
+                if (script == "cloudpush.js") {
+                    if (host !== "home") {
+                        ns.scp(script, host, "home");
+                    }
+                }
+
+                // Fire off script if not running
+                // WARNING - all added scripts to watched must follow this args format (targethost as arg[0])
+                ns.exec(script, host, 1, host);
+            }
+            else {
+                running = true;
+            }
+            break;
+
+        default:
+            // placeholder to add alt behaviour pid check code
+            //
+            //
+            //
+            break;
+    }
+    return running;
+}
 
 
    

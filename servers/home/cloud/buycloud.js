@@ -1,6 +1,7 @@
 /**
  * Handles CLI arguments and dispatches the appropriate cloud server purchase workflow.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     // handle args
@@ -27,6 +28,7 @@ export async function main(ns) {
 /**
  * Prints usage instructions for the cloud server purchasing script.
  * @param {NS} ns - The Netscript API object
+ * @returns {void}
  */
 function printusage(ns) {
     ns.tprint("This script will buy the most expensive server you can afford from targetserver, with the name specified by newCloudName.");
@@ -41,6 +43,7 @@ function printusage(ns) {
  * Purchases the largest affordable cloud server and records it in the cloud registry.
  * @param {NS} ns - The Netscript API object
  * @param {string} newCloudName - The name for the new cloud server
+ * @returns {Promise<void>}
  */
 async function buy(ns, newCloudName) {
     // we will use this variable to track the last known affordable RAM amount, starting at 2GB, and double it until we find the most expensive server we can afford
@@ -84,6 +87,7 @@ async function buy(ns, newCloudName) {
  * Purchases a fixed-size cloud server and records it in the cloud registry.
  * @param {NS} ns - The Netscript API object
  * @param {string} newCloudName - The name for the new cloud server
+ * @returns {Promise<void>}
  */
 export async function minBuy(ns, newCloudName) {
     // always buys 2gb (small) server

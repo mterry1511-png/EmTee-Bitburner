@@ -4,6 +4,7 @@ import { scanNetwork, scanCloud } from "../scanner.js";
  * Deletes all cloud servers and restarts the daemon afterward.
  * WARNING: irreversible - loss occurs
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     // kill daemon if running - interferes with clouds.json write

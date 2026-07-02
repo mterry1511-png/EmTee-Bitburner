@@ -2,11 +2,10 @@ import { scanNetwork, scanCloud } from "../scanner.js";
 import { minBuy } from "./buycloud.js";
 
 /**
- * Buys servers up to the targetCloudServs
- * Upgrades all cloud servers to at least the minimum RAM defined in cfg.json,
- * provided the upgrade cost is within the configured spending threshold.
+ * Buys servers up to the targetCloudServs, then upgrades all cloud servers to minimum RAM defined in cfg.json.
  * Updates clouds.json on successful upgrade.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     const cfg = JSON.parse(ns.read("/data/cfg.json"));

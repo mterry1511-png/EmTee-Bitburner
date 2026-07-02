@@ -4,6 +4,7 @@ import { scanNetwork } from "../scanner.js";
 /**
  * Selects a target based on the requested targeting mode.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<string>}
  */
 export async function main(ns) {
     const mode = ns.args[0];
@@ -79,6 +80,7 @@ export function getTarget(ns, mode) {
  * @param {string} target - The hostname of the target server
  * @param {string} mode - The targeting mode (best, hacklvl, easy)
  * @param {number} [moneyPerSec] - The money per second for this target
+ * @returns {void}
  */
 function printTarget(ns, target, mode, moneyPerSec) {
     switch (mode) {

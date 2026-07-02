@@ -1,7 +1,9 @@
+import { killAll } from "../killall.js";
 
 /**
  * Renames a cloud server and updates the cloud registry file.
- * @param {NS} ns - The Netscript API object. Terminal inputs are passed via ns.args[0] and ns.args[1].
+ * @param {NS} ns - The Netscript API object. Terminal inputs are passed via ns.args[0] and ns.args[1]
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     const oldName = ns.args[0];
@@ -12,6 +14,7 @@ export async function main(ns) {
         return;
     }
 
+    killAll(ns,oldName);
     ns.cloud.renameServer(oldName, newName);
 
     // update json
@@ -22,13 +25,15 @@ export async function main(ns) {
     ns.write("/data/clouds.json", JSON.stringify(clouds), "w");
 
     // print success
-    ns.print("Server " + oldName + " renamed to " + newName + ". clouds.json updated.");
+    ns.tprint("All processes stopped on " + oldName);
+    ns.tprint("Server " + oldName + " renamed to " + newName + ". clouds.json updated.");
 }
 
 /**
  * Prints usage instructions for the renamecloud helper.
  * @param {NS} ns - The Netscript API object
+ * @returns {void}
  */
 export function printusage(ns) {
-    ns.print("Usage: run renamecloud.js <oldName> <newName>");
+    ns.tprint("Usage: run /cloud/renamecloud.js <oldName> <newName>");
 }

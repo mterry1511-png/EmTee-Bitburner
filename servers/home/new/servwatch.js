@@ -1,6 +1,7 @@
 /**
  * Watches the network and deploys deployer processes as needed.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     // servWatch - refreshes ./data/networks.json regularly and deploys deployers.js

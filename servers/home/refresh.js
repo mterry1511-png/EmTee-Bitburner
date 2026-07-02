@@ -10,6 +10,8 @@ import { autoNuke } from "./lib/util.js";
 /**
  * Refreshes the network map, re-runs auto-nuke, and updates the cloud inventory.
  * @param {NS} ns - The Netscript API object
+ * @param {boolean} [quiet=false] - If true, suppresses console output
+ * @returns {Promise<void>}
  */
 //doesn't take args by design
 export async function main(ns, quiet = false) {

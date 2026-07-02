@@ -4,6 +4,7 @@ import { getAvailableThreads } from "./lib/util.js";
 /**
  * Entry point that starts a deployer against the requested host and mode.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     const scriptHost = ns.args[0] ?? "home";
@@ -18,6 +19,7 @@ export async function main(ns) {
  * @param {string} scriptHost - The host server to run hack operations from
  * @param {string} targetMode - The targeting mode (best, ranked, hacklvl, easy)
  * @param {string} [target=null] - Optional target server hostname
+ * @returns {Promise<void>}
  */
 export async function start(ns, scriptHost, targetMode, target = null) {
     // handle args
@@ -85,7 +87,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
         // If security is above threshold, weaken it
         if (currentSec > securityThreshActual) {
-            const script = "./hgw/weaken.js";
+            const script = "./lib/hgw/weaken.js";
             const securityToReduce = currentSec - securityThreshActual;
             const maxWeakenThreads = Math.ceil(securityToReduce / weakenPerThread);
             const neededThreads = maxWeakenThreads - runningThreads(script);
@@ -103,7 +105,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
         // If money is below threshold, grow it
         else if (currentMoney < moneyThresh) {
-            const script = "./hgw/grow.js";
+            const script = "./lib/hgw/grow.js";
             const safeMoney = Math.max(currentMoney, 1);
             const growMultiplier = (maxMoney * cfg.moneyThresh) / safeMoney;
             const maxGrowThreads = Math.ceil(ns.growthAnalyze(target, growMultiplier));
@@ -123,7 +125,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 
         // Otherwise, hack it
         else {
-            const script = "./hgw/hack.js";
+            const script = "./lib/hgw/hack.js";
             const targetHackFraction = cfg.targetHackFraction ?? 0.05;
             const maxHackThreads = Math.max(1, Math.floor(targetHackFraction / ns.hackAnalyze(target)));
             const neededThreads = maxHackThreads - runningThreads(script);
@@ -140,7 +142,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
         }
 
         // sleep to not overload the server with requests
-        await ns.sleep(1000);
+        await ns.sleep(50);
     }
 }
 

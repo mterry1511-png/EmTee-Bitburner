@@ -1,6 +1,7 @@
 /**
  * Continuously pushes local scripts to a target cloud server.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     const targetCloud = ns.args[0] ?? null;
@@ -29,6 +30,7 @@ export async function main(ns) {
  * Copies scripts and JSON files to the specified cloud server.
  * @param {NS} ns - The Netscript API object
  * @param {string} targetCloud - The target cloud server to push scripts to
+ * @returns {Promise<void>}
  */
 export async function pushScripts(ns, targetCloud) {
     const scripts = ns.ls("home", ".js");
@@ -40,6 +42,7 @@ export async function pushScripts(ns, targetCloud) {
 /**
  * Prints usage instructions for the cloud push helper.
  * @param {NS} ns - The Netscript API object
+ * @returns {void}
  */
 function printusage(ns) {
     ns.tprint("Usage: Launched automatically by daemon. run cloudpush.js [targetCloud]");

@@ -1,4 +1,8 @@
-/** @param {NS} ns */
+/**
+ * Entry point that scans the network and/or cloud servers based on mode.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 // Pass arg[0] 0 for default or 1 for cloud only
 export async function main(ns) {
     const mode = ns.args[0] ?? null;
@@ -20,6 +24,7 @@ export async function main(ns) {
 /**
  * Prints scanner usage instructions.
  * @param {NS} ns - The Netscript API object
+ * @returns {void}
  */
 function printusage(ns) {
     ns.tprint("Usage: run scanner.js - use from home only");
@@ -34,6 +39,7 @@ function printusage(ns) {
  * Scans the reachable network and stores server metadata to networks.json.
  * @param {NS} ns - The Netscript API object
  * @param {boolean} [quiet=false] - Whether to suppress output messages
+ * @returns {Promise<void>}
  */
 export async function scanNetwork(ns, quiet = false) {
     // set silent if -q specified
@@ -129,6 +135,7 @@ export async function scanNetwork(ns, quiet = false) {
  * Collects purchased cloud servers and writes them to clouds.json.
  * @param {NS} ns - The Netscript API object
  * @param {boolean} [quiet=false] - Whether to suppress output messages
+ * @returns {Promise<void>}
  */
 export async function scanCloud(ns, quiet = false) {
     // set silent if -q specified

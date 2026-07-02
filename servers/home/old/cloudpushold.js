@@ -1,4 +1,9 @@
-/** @param {NS} ns */
+/**
+ * Executes cloudpush logic, pushing scripts to specified cloud servers from home.
+ * Execute from home. Script pushes itself to the specified targetCloud then restarts from the targetCloud instead.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 // Execute from home. Script pushes itself to the specified targetCloud then restarts but running from the targetCloud instead, 
 // updating scripts automatically as they are updated.
 export async function main(ns) {
@@ -27,6 +32,12 @@ export async function main(ns) {
     }
 }
 
+/**
+ * Updates scripts on a target cloud server.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} targetCloud - The cloud server to update
+ * @returns {Promise<void>}
+ */
 async function update(ns, targetCloud) {
     // if running from home, push scripts to cloud and restart from there
     if (ns.getHostname() === "home") {
@@ -50,7 +61,12 @@ async function update(ns, targetCloud) {
         }
     }
 }
-// Push scripts function, called in main loop
+/**
+ * Push scripts function, called in main loop.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} targetCloud - The cloud server to push scripts to
+ * @returns {Promise<void>}
+ */
 export async function pushScripts(ns, targetCloud) {
     // Define all .js and .json files to push here
     const scripts = ns.ls("home", ".js");

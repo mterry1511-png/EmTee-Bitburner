@@ -1,6 +1,7 @@
 /**
  * Repeatedly weaken, grow, and hack a target server using the provided target argument.
  * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
  */
 export async function main(ns) {
     var target = ns.args[0];
