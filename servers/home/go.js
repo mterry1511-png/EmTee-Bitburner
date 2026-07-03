@@ -91,14 +91,13 @@ export async function main(ns) {
     const cfg = JSON.parse(ns.read("/data/cfg.json"));
 
 
-    if (ns.isRunning("daemon.js", "home")) {
-        // // restart daemon.js  - DISABLED - NOT REQUIRED
-        ns.tprint("cfg updated - starting on daemon.js (5s) - Sit tight!")
-        ensureRunning(ns, "daemon.js", "home");
+    if (ensureRunning(ns, "daemon.js", "home")) {
+        ns.tprint("cfg updated - starting daemon.js (5s) - Sit tight!");
         await ns.sleep(5000);                                 // long ass wait to allow daemon.js to finish buying and upgrading servers
     }
+
     else {
-        ns.tprint("cfg updated - daemon.js detected as running");   
+        ns.tprint("cfg updated - daemon.js detected as running");
     }
 
     // redefined throughout to be up to date.
@@ -115,9 +114,7 @@ export async function main(ns) {
 
     // iterate buyrep.js on all but one cloud servers - leaving one free for whatever
     for (let i = 1; i < cloudNames.length; i++) {
-        if (!ns.isRunning("buyrep.js", cloudNames[i])) {
-            ns.exec("buyrep.js", "home", 1, cloudNames[i]);
-        }
+        ensureRunning(ns, "buyrep.js", cloudNames[i]);
     }
 
     // update user

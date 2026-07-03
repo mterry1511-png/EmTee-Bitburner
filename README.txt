@@ -1,11 +1,14 @@
-EmTee's Bitburner v1.1
-Updated go.js args 1-6 for semi-automation of things
+EmTee's Bitburner v1.x
+Trimmed up bugs and ensureRunning().
 
 Next steps:
+Seems like an issue with minbuy call - crashed on first start
+
 - add to daemon: 
     Hacknet buy script
     programs buy script  !! REQUIRES SINGULARITY (add flags for dispatch.js to relaunch)
         Relaunch dispatch.js every x time or on flag
+    read user money / skills to auto run go.js (???)
 
 -set defaults in cfg scripts
 
@@ -14,6 +17,10 @@ Next steps:
 Future:
 - Scheduler!
 - BIG batching hack code
+- Stock market code
+
+Future Requires singularity:
+- Autobuy programs
 
 
                  ``          

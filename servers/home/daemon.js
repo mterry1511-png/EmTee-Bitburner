@@ -46,13 +46,15 @@ export async function main(ns) {
         // WARNING - all added scripts to watched must follow this args format (targethost as arg[0]).
         watched = cfg.watchedScripts;
 
+
+            //// MAIN EXECUTION BLOCK
         // refresh network, autonuke+root, update networks.json
         await refresh(ns, true);
 
         // upgrade clouds up to mincloudRAM if upgrade costs less than maxPercSpend (both in cfg.json)
         await upgradeClouds(ns);
 
-        // main loop - check watched scripts on cloud servers 
+        // check watched scripts are running on cloud servers 
         for (const cloudName in clouds) {
             for (const script of watched) {
                 ensureRunning(ns, script, cloudName);
@@ -61,7 +63,7 @@ export async function main(ns) {
         }
 
         // hacknet auto buy
-        ensureRunning(ns, "buyhacknode.js", "home");
+            // import and run here sync
 
         // set in cfg.json
         await ns.sleep(cfg.daemonSleep);

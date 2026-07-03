@@ -6,7 +6,7 @@
 export async function main(ns) {
     // handle args
     const newCloudName = ns.args[0];
-    const minBuyFlag = ns.args[1];              // pass 1 to buy 32gb server instead
+    const minBuyFlag = ns.args[1];              // pass 1 to buy 2gb server instead
 
     //calls help
     const help = ns.args.includes("help");

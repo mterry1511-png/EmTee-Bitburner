@@ -189,17 +189,15 @@ export function jsonEdit(ns, key, value, filepath = "/data/cfg.json") {
  * @param {string} script - The script name to ensure is running
  * @param {string} host - The target server hostname
  * @param {number|null} [pid=null] - If provided, checks by PID instead of script name
- * @returns {boolean} Whether the script is currently running on the target server
+ * @returns {boolean} Whether the script was executed by ensureRunning 
  */
 export function ensureRunning(ns, script, host, pid = null) {
-    let running = false;
+    let ran;
     switch (pid) {
         case null:
             if (!ns.isRunning(script, host, host)) {
-                running = false;
-
                 // Specific behaviour for cloudpush.js as it does not transfer itself.
-                // all other scripts will be pushed by this script.
+                // all other scripts will be scp pushed by the cloudpush script.
                 if (script == "cloudpush.js") {
                     if (host !== "home") {
                         ns.scp(script, host, "home");
@@ -209,9 +207,11 @@ export function ensureRunning(ns, script, host, pid = null) {
                 // Fire off script if not running
                 // WARNING - all added scripts to watched must follow this args format (targethost as arg[0])
                 ns.exec(script, host, 1, host);
+
+                ran = true;
             }
             else {
-                running = true;
+                ran = false;
             }
             break;
 
@@ -222,7 +222,7 @@ export function ensureRunning(ns, script, host, pid = null) {
             //
             break;
     }
-    return running;
+    return ran;
 }
 
 
