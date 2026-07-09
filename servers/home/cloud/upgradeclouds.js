@@ -52,7 +52,7 @@ export async function main(ns) {
 
             if ((player.money * (cfg.purchaseConfig.maxPercSpend / 100)) > cost) {
                 if (ns.cloud.upgradeServer(cloud, targetRam)) {
-                    ns.print("Upgraded " + cloud + " to " + targetRam + "GB");
+                    ns.print("\nUpgraded " + cloud + " to " + targetRam + "GB");
 
                     // update json
                     clouds[cloud].maxRam = targetRam;
@@ -60,7 +60,7 @@ export async function main(ns) {
                 }
             }
             else {
-                ns.print("Could not afford " + targetRam + "GB upgrade on " + cloud + ". Requires $" + cost);
+                ns.print("\nCould not afford " + targetRam + "GB upgrade on " + cloud + ". Requires $" + cost);
             }
         }
     }

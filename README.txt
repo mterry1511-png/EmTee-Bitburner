@@ -2,7 +2,11 @@ EmTee's Bitburner v1.x
 Trimmed up bugs and ensureRunning().
 
 Next steps:
-Seems like an issue with minbuy call - crashed on first start
+Seems like an issue with minbuy call - crashed on first  - seems to still be a problem?
+
+- add money rounding import function - $1k, $1mil, $1bil etc
+
+- dispatch mode - spread across cloud servers? or just bosh out the threads scheduler already.
 
 - add to daemon: 
     Hacknet buy script
@@ -19,7 +23,9 @@ Future:
 - BIG batching hack code
 - Stock market code
 
-Future Requires singularity:
+Future (Requires singularity):
+- backdoor everything
+- autojoin factions
 - Autobuy programs
 
 
@@ -50,79 +56,44 @@ Future Requires singularity:
    +MM:       :MM+           
     sNNo-.`.-omNy`           
      -smNNNNmdo-             
-        `..`                 s
+        `..`                 
 
 
 
-
-
-
-Older notes (needs cleaning up :) )
-                                        Next Step: dispatch tweak
-                                        Dispatch adjustment summary:
-
-                                        **Goal:** Dispatch clouds efficiently — 1 deployer per cloud server, 1 target each, paired by RAM rank.
-
-                                        **Step 1 — `getCloudServers(ns)` in util.js**
-                                        New exported function. Returns `ns.getPurchasedServers()` sorted by max RAM descending, filtered to those with enough RAM to run deployer.js. No `leaveRamFree` applied. Signature: `getCloudServers(ns)`.
-
-                                        **Step 2 — dispatch.js new default behaviour**
-                                        Triggered when no args passed. Before dispatching, kill all running deployer.js instances on all cloud servers — this cascades to their children via the existing `ns.atExit` cleanup in deployer. Then get ranked targets and cloud list, zip by index, exec one deployer per cloud passing the cloud as scripthost and its assigned target. Launch count is `Math.min(targets.length, clouds.length)`. Existing modes untouched.
-
-                                        **Step 3 — buyserver.js threshold check**
-                                        After the doubling loop finds `affordableRam`, check against `cfg.purchaseConfig.mincloudRAM` before purchasing. If below threshold, print and exit without buying. Config key already exists in cfg.json.
-
-                                        **Decisions resolved:**
-                                        - Dispatch kills all deployers on clouds before re-dispatching ✓
-                                        - Home excluded from cloud pool ✓
-                                        - `leaveRamFree` not applied to clouds ✓
-
-
-                                        tweak dispatch.js?
-                                        cloudBuy.js
-                                        Scheduler from home (STRONG AS HELL)
-
-                                        Next up
-                                            dispatch.js v2
-                                            1. Load cfg
-                                            2. Build myServers list:
-                                        - Always include purchased servers
-                                        - Include home only if cfg.deployToHome is true
-                                            3. Kill all deployer.js on all myServers
-                                            4. Get ranked targets from targeting
-                                            5. Sort myServers by available RAM descending
-                                                - For home, subtract leaveRamFree from available RAM
-                                            6. Filter out servers with insufficient RAM to run deployer.js
-                                            7. Assign targets to servers:
-                                                - Zip targets and servers together cycling through servers
-                                                - Skip if target already being attacked (post-kill this is unlikely but safe to check)
-                                                - Skip server if insufficient RAM for this specific exec
-                                            8. Exec deployer on each assignment
-                                            9. Print summary and exit
-
-
-
-                                            basic controller
-                                            config json handler script
-                                            add cloud ram json for glancing at
-                                            watch tools
-                                            autopurchase watch
-                                            only launch enough threads to take all the moneyyyyyy
-                                            
-
-
-                                        stuff I am doing to script up 
-                                                1st time
-                                            <SET UP CONFIG> - create a script to modify these values???????
-                                            run init.js
-                                            
-                                                each time after
-                                            killall
-                                            <ADJUSTING CONFIG FILE FOR SERVER NUMBER>
-                                            run refresh.js
-                                            run dispatch.js
-
-                                            run buyserver.js <NEWSERVER>
-                                            run cloudpush.js <NEWSERVER>
-                                            run dispatch.js <NEWSERVER>
+NiteSec
+                  __..__               
+                _.nITESECNIt.            
+             .-'NITESECNITESEc.          
+           .'    NITESECNITESECn         
+          /       NITESECNITESEC;        
+         :        :NITESECNITESEC;       
+         ;       $ NITESECNITESECN       
+        :    _,   ,N'ITESECNITESEC       
+        : .+^^`,  :    `NITESECNIT       
+         ) /),     `-,-=,NITESECNI       
+        /  ^         ,-;|NITESECN;       
+       /     _.'     '-';NITESECN        
+      (  ,           ,-''`^NITE'         
+       )`            :`.    .'           
+       )--           ;  `- /             
+       '        _.-'     :              
+       (     _.-'   .                  
+        ------.                       
+                .                     
+                         _.nIt          
+                    _.nITESECNi         
+                   nITESECNIT^'         
+                   NITE^' ___           
+                  /    .gP''''Tp.       
+                 :    d'     .  `b      
+                 ;   d'       o  `b ;    
+                /   d;            `b|    
+               /,   $;          @  `:    
+              /'    $/               ;   
+            .'      $/b          o   |   
+          .'       d$/$;             :   
+         /       .d/$/$;          ,   ;  
+        d      .dNITESEC          $   |  
+       :bp.__.gNITESEC/$         :$   ;  
+       NITESECNITESECNIT         /$b :   
 

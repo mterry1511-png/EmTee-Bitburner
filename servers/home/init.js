@@ -1,6 +1,7 @@
 // import functions required
 import { scanNetwork, scanCloud } from "./scanner.js";
 import { autoNuke } from "./lib/util.js";
+import { jsonEdit } from "./lib/util.js";
 
 /**
  * Initialises the automation environment by scanning and auto-nuking the network.
@@ -20,13 +21,29 @@ export async function main(ns) {
     // ns.disableLog("getHostname");
 
     // import config file
-    const cfg = JSON.parse(ns.read("/data/cfg.json"));
+    let cfg = JSON.parse(ns.read("/data/cfg.json"));
+
+    //check for first run since reset?
+    const resetInfo = ns.getResetInfo();
+    const isFirstRunSinceReset = cfg.lastAugReset !== resetInfo.lastAugReset;
+    // and if it is - run cfgall first before any of this
+    if (isFirstRunSinceReset) {
+        ns.tprint("New augmentation reset detected — running initial config.");
+        // waits for the config to close before continuing
+        const pid = ns.run("cfg/cfgall.js", 1);
+        while (ns.isRunning(pid)) {
+            await ns.sleep(200);
+        }
+        jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
+    }
+
+    cfg = JSON.parse(ns.read("/data/cfg.json"));
 
     const results = "";
 
     // Fun little countdown nonsense
-    await nonsense(ns);   
-    
+    await nonsense(ns);
+
     // run scanner to build "/data/networks.json"
     scanNetwork(ns, true);
     scanCloud(ns, true);
@@ -43,7 +60,7 @@ export async function main(ns) {
     scanNetwork(ns, true);
 
     ns.kill("daemon.js", "home");   // this kill only works when daemon.js was ran with no args 
-    ns.run("daemon.js",1);
+    ns.run("daemon.js", 1);
 
     // exec buyRAM
 
@@ -56,7 +73,7 @@ export async function main(ns) {
     // exec buyTor and programs (SINGULARITY)
 
     // exec watch
-    
+
     await printResults(ns, results, cfg);
 }
 
@@ -85,7 +102,7 @@ async function printResults(ns, results, cfg) {
     ns.tprint("  Cloud servers updated and stored in ./data/clouds.json\n");
     ns.tprint("  AutoNuked all servers\n");
     ns.tprint("  daemon.js running - watching " + cfg.watchedScripts);
-    ns.tprint("  Remember to buy TOR router!");
+    ns.tprint("  Remember to buy TOR router and buy programs with buy -l and buy -a");
     ns.tprint("  run cfgall.js then go.js or dispatch.js to get started!");
 }
 

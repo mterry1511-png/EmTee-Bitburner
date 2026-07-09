@@ -1,4 +1,4 @@
-import { jsonEdit } from "./lib/util.js";
+import { jsonEdit } from "../lib/util.js";
 
 /**
  * Configures server-specific settings (purchase configuration).

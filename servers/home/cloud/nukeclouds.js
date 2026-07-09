@@ -8,8 +8,7 @@ import { scanNetwork, scanCloud } from "../scanner.js";
  */
 export async function main(ns) {
     //confirmation
-    input = await ns.prompt("WARNING: Delete all cloud servers?", { type: "boolean" });
-
+    const input = await ns.prompt("WARNING: Delete all cloud servers?", { type: "boolean" });
     switch (input) {
         case true:
             // kill daemon if running - interferes with clouds.json write

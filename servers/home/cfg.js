@@ -1,18 +1,34 @@
+
 /**
- * Reads cfg.json config file as log 
- * COULD BE UPGRADED WiTH SINGULARITY
+ * Points to cfg scripts from terminal
+ * 
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
  */
 export async function main(ns) {
-    const cfg = JSON.parse(ns.read("./data/cfg.json"));
-    
-    // open tail by default
-    ns.ui.openTail();
-    ns.ui.setTailMinimized(false); // true: min, false: max
-    // ns.ui.moveTail(1380, 0);
-    ns.ui.resizeTail(1000,500);
+    let script;
+    const choice = await ns.prompt("Select the cfg category", {
+        type: "select",
+        choices: ["All", "Clouds", "Hacknet", "Targeting", "View"]
+    });
 
-    // print
-    ns.print(cfg);
+    switch (choice) {
+        case "All":
+            script = "cfg/cfgall.js"; 
+            break;
+        case "Clouds":
+            script = "cfg/cfgcloud.js";
+            break;
+        case "Hacknet":
+            script = "cfg/cfghacknet.js";
+            break;
+        case "Targeting":
+            script = "cfg/cfgtarget.js";
+            break;
+        case "View":
+            script = "cfg/cfgview.js";
+            break;
+    }
+
+    ns.run(script, 1);
 }

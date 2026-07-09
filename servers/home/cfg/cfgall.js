@@ -1,4 +1,4 @@
-import { jsonEdit } from "./lib/util.js";
+import { jsonEdit } from "../lib/util.js";
 
 /**
  * Interactively configures all daemon settings via prompts.
@@ -12,6 +12,9 @@ export async function main(ns) {
     const fields = [
         { key: "daemonSleep", label: "Daemon Sleep (ms)", default: 10000, type: "number" },
         { key: "cloudPushSleep", label: "Cloud Push Sleep (ms)", default: 5000, type: "number" },
+        { key: "hacknetBuySleep", label: "Hacknet Buy Sleep (ms)", default: 20, type: "number" },
+        { key: "hacknetPercSpend", label: "Hacknet Percent Spend", default: 80, type: "number" },
+        { key: "autobuyHacknet", label: "Autobuy Hacknet? Bool", default: false, type: "boolean" },
         { key: "securityThresh", label: "Security Threshold", default: 2, type: "number" },
         { key: "moneyThresh", label: "Money Threshold", default: 0.88, type: "number" },
         { key: "targetHackFraction", label: "Target Hack Fraction", default: 0.1, type: "number" },
@@ -23,13 +26,13 @@ export async function main(ns) {
         { key: "targetRequirements.minServerGrowth", label: "Min Server Growth", default: 1, type: "number" },
         { key: "targetRequirements.minDispatchServers", label: "Min Dispatch Servers", default: 1, type: "number" },
         { key: "targetRequirements.maxDispatchServers", label: "Max Dispatch Servers", default: 6, type: "number" },
+        // targetRequirements.excludeServers intentionally excluded
 
         { key: "purchaseConfig.maxPercSpend", label: "Max Percent Spend", default: 80, type: "number" },
         { key: "purchaseConfig.minCloudRam", label: "Min Cloud RAM (GB)", default: 7688, type: "number" },
         { key: "purchaseConfig.targetCloudServs", label: "Target Cloud Servers", default: 3, type: "number" },
-        // cloudNamePresets intentionally excluded
+        // purchaseConfig.cloudNamePresets intentionally excluded
     ];
-
     if (useDefaults) {
         for (const field of fields) {
             jsonEdit(ns, field.key, field.default);

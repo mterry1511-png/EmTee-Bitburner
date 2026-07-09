@@ -1,6 +1,7 @@
 import { main as refresh } from "./refresh.js";
 import { main as upgradeClouds } from "./cloud/upgradeclouds.js";
 import { ensureRunning } from "./lib/util.js";
+import * as buyHacknetNodes from "./watch/buyhacknetnodes.js";
 
 /**
  * Continuously refreshes the network and relaunches watched scripts on clouds.
@@ -11,6 +12,7 @@ export async function main(ns) {
     // defined outside the loop to allow ns.atexit culling
     let clouds;
     let watched;
+    let firstLoop = true;        // allows different behaviour on first loop
 
     // close old daemon.js instances, excluding self
     const processes = ns.ps("home");
@@ -23,7 +25,7 @@ export async function main(ns) {
     // open tail by default
     ns.ui.openTail();
     ns.ui.setTailMinimized(false); // true: min, false: max
-    ns.ui.moveTail(1470, 0);
+    ns.ui.moveTail(1450, 0);
     ns.ui.resizeTail(250, 350);
 
     // close all children when killed
@@ -46,8 +48,11 @@ export async function main(ns) {
         // WARNING - all added scripts to watched must follow this args format (targethost as arg[0]).
         watched = cfg.watchedScripts;
 
+        // print timestamp if there have been new entries only
+        const time = new Date().toLocaleTimeString();
+        ns.print(`\n [${time}]`);
 
-            //// MAIN EXECUTION BLOCK
+        //// MAIN EXECUTION BLOCK
         // refresh network, autonuke+root, update networks.json
         await refresh(ns, true);
 
@@ -58,15 +63,27 @@ export async function main(ns) {
         for (const cloudName in clouds) {
             for (const script of watched) {
                 ensureRunning(ns, script, cloudName);
-                await ns.sleep(50);
+                await ns.sleep(50); 
             }
         }
 
-        // hacknet auto buy
-            // import and run here sync
+        //hacknet autobuy
+        if (cfg.autobuyHacknet == true) {
+            if (firstLoop) {
+                // buys up to max affordable
+                await buyHacknetNodes.main(ns);
+            }
+            else {
+                buyHacknetNodes.buyCheapest(ns);
+            }
+        }
+
+        // programs auto buy
+        // import and run here sync (requires singularity)
 
         // set in cfg.json
         await ns.sleep(cfg.daemonSleep);
+        firstLoop = false;
     }
 }
 

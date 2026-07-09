@@ -99,14 +99,14 @@ export async function minBuy(ns, newCloudName) {
     while (ns.cloud.getServerCost(2) > ns.getPlayer().money) {
         // wait (should be fast!)
         await ns.sleep(5000);
-        ns.print("Can't afford server - waiting for player money...")
+        ns.print("\nCan't afford server - waiting for player money...")
     }
 
     // purchase 2gb
     newCloudName = ns.cloud.purchaseServer(newCloudName.toString(), 2);
 
     // print results to terminals
-    ns.print("Bought server " + newCloudName + " with 2GB of RAM");
+    ns.print("\nBought server " + newCloudName + " with 2GB of RAM");
 
     // add cloud server to JSON
     const servs = JSON.parse(ns.read("/data/clouds.json"));           // write clouds/json to an obj

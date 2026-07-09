@@ -25,7 +25,6 @@ export async function start(ns, scriptHost, targetMode, target = null) {
     // handle args
     target = target ?? targeting.getTarget(ns, targetMode);
 
-
     // load config
     const cfg = JSON.parse(ns.read("/data/cfg.json"));
     const maxMoney = ns.getServerMaxMoney(target);
@@ -36,8 +35,9 @@ export async function start(ns, scriptHost, targetMode, target = null) {
     if (minDifficulty === null) return;
     const securityThreshActual = minDifficulty + cfg.securityThresh;
 
-    // hoisted - pure calculation, doesn't change per iteration
+    // hoisted - pure calculations, don't change per iteration
     const weakenPerThread = ns.weakenAnalyze(1);
+    const growSecPerThread = ns.growthAnalyzeSecurity(1);
 
     // state as obj
     const state = { waiting: false };
@@ -91,15 +91,21 @@ export async function start(ns, scriptHost, targetMode, target = null) {
             const securityToReduce = currentSec - securityThreshActual;
             const maxWeakenThreads = Math.ceil(securityToReduce / weakenPerThread);
             const neededThreads = maxWeakenThreads - runningThreads(script);
-            const threads = Math.min(getAvailableThreads(ns, scriptHost, script), neededThreads);
 
-            const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
-            if (success) {
+            // Already have enough weaken queued - not a RAM problem, nothing to do this tick
+            if (neededThreads <= 0) {
                 state.waiting = false;
-                weakCount++;
-            }
-            if (!state.waiting) {
-                ns.print(`Security too high - ${currentSec} (current) > ${securityThreshActual} (threshold)`);
+            } else {
+                const threads = Math.min(getAvailableThreads(ns, scriptHost, script), neededThreads);
+
+                const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
+                if (success) {
+                    state.waiting = false;
+                    weakCount++;
+                }
+                if (!state.waiting) {
+                    ns.print(`Security too high - ${currentSec} (current) > ${securityThreshActual} (threshold)`);
+                }
             }
         }
 
@@ -107,19 +113,34 @@ export async function start(ns, scriptHost, targetMode, target = null) {
         else if (currentMoney < moneyThresh) {
             const script = "./lib/hgw/grow.js";
             const safeMoney = Math.max(currentMoney, 1);
-            const growMultiplier = (maxMoney * cfg.moneyThresh) / safeMoney;
-            const maxGrowThreads = Math.ceil(ns.growthAnalyze(target, growMultiplier));
-            const availableThreads = getAvailableThreads(ns, scriptHost, script);
-            const neededThreads = maxGrowThreads - runningThreads(script);
-            const threads = Math.min(availableThreads, neededThreads);
 
-            const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
-            if (success) {
+            // Target full money, not just moneyThresh - the true ceiling for grow's usefulness
+            const growMultiplier = maxMoney / safeMoney;
+            const moneyCapThreads = Math.ceil(ns.growthAnalyze(target, growMultiplier));
+
+            // Cap grow threads so they don't add more security than a full weaken pass
+            // (using RAM currently available for weaken) could undo next cycle.
+            const weakenCapacityThreads = getAvailableThreads(ns, scriptHost, "./lib/hgw/weaken.js");
+            const securityCapThreads = Math.floor((weakenCapacityThreads * weakenPerThread) / growSecPerThread);
+
+            const maxGrowThreads = Math.max(1, Math.min(moneyCapThreads, securityCapThreads));
+            const neededThreads = maxGrowThreads - runningThreads(script);
+
+            // Already have enough grow queued - not a RAM problem, nothing to do this tick
+            if (neededThreads <= 0) {
                 state.waiting = false;
-                growCount++;
-            }
-            if (!state.waiting) {
-                ns.print(`Money too low - ${currentMoney} (current) < ${moneyThresh} (threshold)`);
+            } else {
+                const availableThreads = getAvailableThreads(ns, scriptHost, script);
+                const threads = Math.min(availableThreads, neededThreads);
+
+                const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
+                if (success) {
+                    state.waiting = false;
+                    growCount++;
+                }
+                if (!state.waiting) {
+                    ns.print(`Money too low - ${currentMoney} (current) < ${moneyThresh} (threshold)`);
+                }
             }
         }
 
@@ -129,15 +150,21 @@ export async function start(ns, scriptHost, targetMode, target = null) {
             const targetHackFraction = cfg.targetHackFraction ?? 0.05;
             const maxHackThreads = Math.max(1, Math.floor(targetHackFraction / ns.hackAnalyze(target)));
             const neededThreads = maxHackThreads - runningThreads(script);
-            const threads = Math.min(getAvailableThreads(ns, scriptHost, script), neededThreads);
 
-            const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
-            if (success) {
+            // Already have enough hack queued - not a RAM problem, nothing to do this tick
+            if (neededThreads <= 0) {
                 state.waiting = false;
-                hackCount++;
-            }
-            if (!state.waiting) {
-                ns.print(`Optimal hack conditions met`);
+            } else {
+                const threads = Math.min(getAvailableThreads(ns, scriptHost, script), neededThreads);
+
+                const success = await execute(ns, target, threads, script, scriptHost, childArr, state);
+                if (success) {
+                    state.waiting = false;
+                    hackCount++;
+                }
+                if (!state.waiting) {
+                    ns.print(`Optimal hack conditions met`);
+                }
             }
         }
 
@@ -160,10 +187,12 @@ export async function start(ns, scriptHost, targetMode, target = null) {
 export async function execute(ns, target, threads, script, scriptHost, childArr, state) {
     ns.disableLog("ALL");
 
-    // Catch error ( divde by 0 threads)
+    // Catch error (genuine RAM scarcity - threads < 1 here now only ever means "not enough free RAM")
     if (threads < 1) {
         if (!state.waiting) {
-            ns.print("\nInsufficient RAM. Waiting...\n");
+            const maxRam = ns.getServerMaxRam(scriptHost);
+            const usedRam = ns.getServerUsedRam(scriptHost);
+            ns.print(`\nInsufficient RAM. maxRam=${maxRam} usedRam=${usedRam} leaveRamFree=${JSON.parse(ns.read("/data/cfg.json")).leaveRamFree} scriptRam=${ns.getScriptRam(script, scriptHost)} threadsNeeded=${threads}\n`);
             state.waiting = true;
         }
         await ns.sleep(3000);
@@ -175,13 +204,6 @@ export async function execute(ns, target, threads, script, scriptHost, childArr,
     if (pid !== 0) {
         childArr.push({ pid, script, threads });
         ns.print(`Ran ${script} [${pid}] with ${threads} threads on ${scriptHost} targeting ${target}`);
-
-        // after exec, wait for the childen to finish before looping
-        // while (childArr.some(pid => ns.isRunning(pid))) {
-        //     await ns.sleep(3000);
-        // }
-
-        // flags success back to main loop
         return true;
     }
     return false;
