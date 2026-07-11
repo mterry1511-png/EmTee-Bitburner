@@ -57,7 +57,9 @@ export async function main(ns) {
         await refresh(ns, true);
 
         // upgrade clouds up to mincloudRAM if upgrade costs less than maxPercSpend (both in cfg.json)
-        await upgradeClouds(ns);
+        if (cfg.autobuyClouds == true) {
+            await upgradeClouds(ns);
+        }
 
         // check watched scripts are running on cloud servers 
         for (const cloudName in clouds) {
@@ -74,7 +76,8 @@ export async function main(ns) {
                 await buyHacknetNodes.main(ns);
             }
             else {
-                buyHacknetNodes.buyCheapest(ns);
+                await buyHacknetNodes.main(ns);             // buys up to max affordable
+                // buyHacknetNodes.buyCheapest(ns);         //  Option for single upgrade per daemon tick only
             }
         }
 

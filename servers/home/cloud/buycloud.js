@@ -1,3 +1,5 @@
+import * as format from "../lib/format.js"
+
 /**
  * Handles CLI arguments and dispatches the appropriate cloud server purchase workflow.
  * @param {NS} ns - The Netscript API object
@@ -58,8 +60,8 @@ async function buy(ns, newCloudName) {
             // can't afford double, so buy current amount
             newCloudName = ns.cloud.purchaseServer(newCloudName.toString(), affordableram);
             // print results to terminals
-            ns.tprint("Bought server " + newCloudName + " with " + affordableram + "GB of RAM for $" + ns.cloud.getServerCost(affordableram) + ". Remaining money: $" + ns.getPlayer().money);
-            ns.print("Bought server " + newCloudName + " with " + affordableram + "GB of RAM for $" + ns.cloud.getServerCost(affordableram) + ". Remaining money: $" + ns.getPlayer().money);
+            ns.tprint("Bought server " + newCloudName + " with " + affordableram + "GB of RAM for " + format.money(ns.cloud.getServerCost(affordableram)) + ". Remaining money: " + format.money(ns.getPlayer().money));
+            ns.print("Bought server " + newCloudName + " with " + affordableram + "GB of RAM for " + format.money(ns.cloud.getServerCost(affordableram)) + ". Remaining money: " + format.money(ns.getPlayer().money));
 
             // add cloud server to JSON
             const servs = JSON.parse(ns.read("/data/clouds.json"));           // write clouds/json to an obj

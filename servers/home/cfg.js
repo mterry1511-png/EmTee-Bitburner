@@ -9,12 +9,12 @@ export async function main(ns) {
     let script;
     const choice = await ns.prompt("Select the cfg category", {
         type: "select",
-        choices: ["All", "Clouds", "Hacknet", "Targeting", "View"]
+        choices: ["All", "Clouds", "Hacknet", "Targeting", "Toggles", "View"]
     });
 
     switch (choice) {
         case "All":
-            script = "cfg/cfgall.js"; 
+            script = "cfg/cfgall.js";
             break;
         case "Clouds":
             script = "cfg/cfgcloud.js";
@@ -24,6 +24,9 @@ export async function main(ns) {
             break;
         case "Targeting":
             script = "cfg/cfgtarget.js";
+            break;
+        case "Toggles":
+            script = "cfg/cfgtoggle.js";
             break;
         case "View":
             script = "cfg/cfgview.js";

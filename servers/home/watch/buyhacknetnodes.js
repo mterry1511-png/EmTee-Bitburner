@@ -1,3 +1,5 @@
+import * as format from "../lib/format.js";
+
 /** @typedef {"NODE" | "LEVEL" | "RAM" | "CORE"} UpgradeAspect */
 /**
  * @typedef {Object} CheapestUpgrade
@@ -35,16 +37,23 @@ export function buyCheapest(ns) {
     const nodeCount = ns.hacknet.numNodes();
     const newNodeCost = ns.hacknet.getPurchaseNodeCost();
     const player = ns.getPlayer();
-    let cheapest = { nodeIndex: null, aspect: "NODE" };       // Declared using new node cost to start
-    let cost = ns.hacknet.getPurchaseNodeCost();              // and it's cost
+    let cheapest;                                           // inst below
+    let cost;                                           // inst below
     let msg;
-    
+
+    // NODE
+    // outside of the loop as this is global -  not specific to each node
+    const nodeCost = ns.hacknet.getPurchaseNodeCost();
+    cheapest = { nodeIndex: null, aspect: "NODE" };       // Load new node cost as default to start
+    cost = nodeCost                                        // and the cost of a new node also
 
     // loops for each  to find cheapest possible upgrade
     for (let node = 0; node < nodeCount; node++) {
+
         const levelCost = ns.hacknet.getLevelUpgradeCost(node, 1);
         const ramCost = ns.hacknet.getRamUpgradeCost(node, 1);
         const coreCost = ns.hacknet.getCoreUpgradeCost(node, 1);
+
 
         // LEVEL
         if (levelCost <= cost) { cheapest = { nodeIndex: node, aspect: "LEVEL" }; cost = levelCost }
@@ -57,14 +66,25 @@ export function buyCheapest(ns) {
     // 
     //
     // decision tree
+    //      NODE overwrite
+    // It is likely more beneficial to buy in order NODE-> LEVEL -> RAM -> CORE
+    // NODE being most important. This switches to NODE if the player can afford (IGNORES cfg.hacknetPercSpend)
+    // which means that the lower that cfg.hacknetPercSpend is - the more often this will trigger
+    //      Can player afford?
+    // if not - proceed as normal with cheapest if player can afford (applying cfg.hacknetPercSpend)
+    if (player.money > nodeCost) {
+        cheapest = { nodeIndex: null, aspect: "NODE" };       
+        cost = nodeCost                                        
 
-    // can player afford?
-    if ((player.money * (cfg.hacknetPercSpend / 100)) < cost) {
-        msg = "\nCannot afford a Hacknet Upgrade. Requires $" + cost;
+    }
+    else if ((player.money * (cfg.hacknetPercSpend / 100)) < cost) {
+        msg = "\nCannot afford a Hacknet Upgrade. Requires " + format.money(cost);
         // msg = msg + ". The current hacknetPercSpend is " + cfg.hacknetPercSpend + "%."
         ns.print(msg);
         return false;
     }
+
+
 
     //execute and return
     switch (cheapest.aspect) {
@@ -73,7 +93,7 @@ export function buyCheapest(ns) {
                 msg = "\nPurchased new Hacknet Node up to " + ns.hacknet.numNodes();
                 return true;
             }
-            ns.print("Error");
+            ns.print("Error purchasing a new node");
             return false;
         }
 
@@ -83,7 +103,7 @@ export function buyCheapest(ns) {
                 ns.print(msg);
                 return true;
             }
-            ns.print("Error");
+            ns.print("Error purchasing a level on node-" + cheapest.nodeIndex);
             return false;
         }
 
@@ -93,7 +113,7 @@ export function buyCheapest(ns) {
                 ns.print(msg);
                 return true;
             }
-            ns.print("Error");
+            ns.print("Error purchasing RAM on node-" + cheapest.nodeIndex);
             return false;
         }
 
@@ -103,12 +123,11 @@ export function buyCheapest(ns) {
                 ns.print(msg);
                 return true;
             }
-            ns.print("Error");
+            ns.print("Error purchasing a core on node-" + cheapest.nodeIndex);
             return false;
         }
     }
 }
-
 
 
 

@@ -1,5 +1,6 @@
 import { scanNetwork, scanCloud } from "../scanner.js";
 import { minBuy } from "./buycloud.js";
+import * as format from "../lib/format.js";
 
 /**
  * Buys servers up to the targetCloudServs, then upgrades all cloud servers to minimum RAM defined in cfg.json.
@@ -60,7 +61,7 @@ export async function main(ns) {
                 }
             }
             else {
-                ns.print("\nCould not afford " + targetRam + "GB upgrade on " + cloud + ". Requires $" + cost);
+                ns.print("\nCould not afford " + targetRam + "GB upgrade on " + cloud + ". Requires " + format.money(cost));
             }
         }
     }

@@ -1,5 +1,6 @@
 import * as targeting from "./lib/targeting.js";
 import { getAvailableThreads } from "./lib/util.js";
+import * as format from "./lib/format.js";
 
 /**
  * Entry point that starts a deployer against the requested host and mode.
@@ -139,7 +140,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
                     growCount++;
                 }
                 if (!state.waiting) {
-                    ns.print(`Money too low - ${currentMoney} (current) < ${moneyThresh} (threshold)`);
+                    ns.print("Money too low - " + format.money(currentMoney) + "(current) < " + format.money(moneyThresh) + "(threshold)");
                 }
             }
         }

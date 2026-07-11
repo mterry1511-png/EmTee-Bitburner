@@ -1,4 +1,5 @@
 import { scanNetwork } from "../scanner.js";
+import * as format from "../lib/format.js";
 
 // Normal usage: Call getTarget directly. See targetingREADME.txt for full usage.
 /**
@@ -89,7 +90,7 @@ function printTarget(ns, target, mode, moneyPerSec) {
         case "easy": { ns.print(target + " was selected because it's easy as fuck to hack."); return; }
     }
     // Print result to terminal and the log
-    const print = ("\nTarget: " + target + "\n$" + (Math.round(moneyPerSec)) + " expected per minute, per thread.\n");
+    const print = ("\nTarget: " + target + "\n$" + format.money(moneyPerSec) + " expected per minute, per thread.\n");
     ns.tprint(print);
     ns.print(print);
 }

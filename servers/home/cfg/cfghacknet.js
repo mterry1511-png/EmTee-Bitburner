@@ -10,6 +10,7 @@ export async function main(ns) {
         const useDefaults = ns.args.includes("default");
     
     const fields = [
+        { key: "hacknetBuySleep", label: "Hacknet Buy Sleep (ms)", default: 20, type: "number" },
         { key: "hacknetPercSpend", label: "Max money spent on hacknet upgrades (%)", default: 80, type: "number" },
         { key: "autobuyHacknet", label: "Enable autobuy hacknet?", default: true, type: "boolean" },
     ];

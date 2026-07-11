@@ -104,7 +104,7 @@ if (!dupe) {
         }
 
         // report success
-        const success = `Launched ${launched} of ${targets.length} deployers.\n          dispatch.js finished.`;
+        const success = `Launched ${launched} of ${targets.length} deployers.\ndispatch.js finished.`;
         ns.tprint(success);
         ns.print(success);
     }

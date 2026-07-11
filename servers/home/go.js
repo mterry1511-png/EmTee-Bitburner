@@ -26,7 +26,7 @@ export async function main(ns) {
                 "purchaseConfig.targetCloudServs": 1,
                 "securityThresh": 3,
                 "moneyThresh": 0.85,
-                "targetHackFraction": 0.05
+                "targetHackFraction": 0.15
             }
             break;
 
@@ -39,26 +39,26 @@ export async function main(ns) {
                 "purchaseConfig.targetCloudServs": 8,
                 "securityThresh": 3,
                 "moneyThresh": 0.85,
-                "targetHackFraction": 0.05
+                "targetHackFraction": 0.15
             }
             break;
 
         case 3:
             changes = {
-                "targetRequirements.minDispatchServers": 5,
+                "targetRequirements.minDispatchServers": 1,
                 "targetRequirements.maxDispatchServers": 25,
                 "purchaseConfig.maxPercSpend": 80,
                 "purchaseConfig.minCloudRam": 128,
                 "purchaseConfig.targetCloudServs": 25,
                 "securityThresh": 3,
                 "moneyThresh": 0.85,
-                "targetHackFraction": 0.05
+                "targetHackFraction": 0.15
             }
             break;
 
         case 4:
             changes = {
-                "targetRequirements.minDispatchServers": 10,
+                "targetRequirements.minDispatchServers": 1,
                 "targetRequirements.maxDispatchServers": 100,
                 "purchaseConfig.maxPercSpend": 60,
                 "purchaseConfig.minCloudRam": 8192,
@@ -71,8 +71,8 @@ export async function main(ns) {
 
         case 5:
             changes = {
-                "targetRequirements.minDispatchServers": 10,
-                "targetRequirements.maxDispatchServers": 100,
+                "targetRequirements.minDispatchServers": 1,
+                "targetRequirements.maxDispatchServers": 150,
                 "purchaseConfig.maxPercSpend": 60,
                 "purchaseConfig.minCloudRam": 524288,
                 "purchaseConfig.targetCloudServs": 25,
@@ -84,7 +84,7 @@ export async function main(ns) {
 
         case 6:
             changes = {
-                "targetRequirements.minDispatchServers": 10,
+                "targetRequirements.minDispatchServers": 1,
                 "targetRequirements.maxDispatchServers": 150,
                 "purchaseConfig.maxPercSpend": 60,
                 "purchaseConfig.minCloudRam": 1048576,
@@ -110,8 +110,8 @@ export async function main(ns) {
 
 
     if (ensureRunning(ns, "daemon.js", "home")) {
-        ns.tprint("cfg updated - starting daemon.js (5s) - Sit tight!");
-        await ns.sleep(5000);                                 // long ass wait to allow daemon.js to finish buying and upgrading servers
+        ns.tprint("cfg updated - starting daemon.js (8s) - Sit tight!");
+        await ns.sleep(8100);                                 // long ass wait to allow daemon.js to finish buying and upgrading servers
     }
 
     else {
@@ -122,21 +122,24 @@ export async function main(ns) {
     let clouds = JSON.parse(ns.read("/data/clouds.json"));    // load clouds.json
     let cloudNames = Object.keys(clouds);                     // fills array with cloud names
 
-    // dispatch to home.js or to cloud depending on cfg
-    if (cfg.deployToHome === true) {
-        ns.exec("dispatch.js", "home", 1, "home");
-    }
-    else {
-        ns.exec("dispatch.js", "home", 1, cloudNames[0]);
-    }
-
-    // iterate buyrep.js on all but one cloud servers - leaving one free for whatever
+    // iterate buyrep.js on all but one cloud servers - leaving one free for now
     for (let i = 1; i < cloudNames.length; i++) {
         ensureRunning(ns, "buyrep.js", cloudNames[i]);
     }
 
-    // update user
-    ns.tprint("dispatch.js and buyrep.js started on owned servers.")
+    // dispatch to home.js or to cloud depending on cfg. fill remaining server with buyrep if dispatching to home.
+    if (cfg.deployToHome === true) {
+        ns.exec("dispatch.js", "home", 1, "home");
+        ensureRunning(ns, "buyrep.js", cloudNames[0]);
+        ns.tprint("dispatch.js started on home. buyrep.js started on all owned servers.")
+
+    }
+    else {
+        ns.exec("dispatch.js", "home", 1, cloudNames[0]);
+        ns.tprint("dispatch.js and buyrep.js started on owned servers.")
+
+    }
+
 
     await ns.sleep(1000);
 }
