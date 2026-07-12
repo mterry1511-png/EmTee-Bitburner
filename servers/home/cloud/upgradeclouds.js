@@ -19,8 +19,20 @@ export async function main(ns) {
         ns.tprint("clouds.json is empty or malformed. Run scanner first.");
         return;
     }
-    // round minCloudRam up to nearest power of 2, capped at max purchasable
-    const targetRam = Math.min(Math.pow(2, Math.floor(Math.log2(cfg.purchaseConfig.minCloudRam))), 1048576);
+    // round minCloudRam up to nearest power of 2, clamped between the smallest and largest purchasable sizes
+    const configuredRam = cfg.purchaseConfig.minCloudRam;
+    const minPurchasableRam = 2;
+    const maxPurchasableRam = 1048576;
+
+    if (!Number.isFinite(Number(configuredRam)) || Number(configuredRam) < minPurchasableRam) {
+        ns.print("\nminCloudRam (" + configuredRam + ") is not a usable number - falling back to " + minPurchasableRam + "GB.");
+    }
+    const requestedRam = Math.max(Number(configuredRam) || minPurchasableRam, minPurchasableRam);
+    const targetRam = Math.min(Math.pow(2, Math.ceil(Math.log2(requestedRam))), maxPurchasableRam);
+
+    if (targetRam !== requestedRam) {
+        ns.print("\nminCloudRam (" + requestedRam + "GB) is not a valid power-of-2 server size - rounded up to " + targetRam + "GB.");
+    }
 
     // preset names list in cfg.json
     const cloudNames = cfg.purchaseConfig.cloudNamePresets;

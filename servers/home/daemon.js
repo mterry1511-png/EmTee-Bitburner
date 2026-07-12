@@ -57,7 +57,7 @@ export async function main(ns) {
         await refresh(ns, true);
 
         // upgrade clouds up to mincloudRAM if upgrade costs less than maxPercSpend (both in cfg.json)
-        if (cfg.autobuyClouds == true) {
+        if (cfg.autobuyClouds === true) {
             await upgradeClouds(ns);
         }
 
@@ -65,7 +65,7 @@ export async function main(ns) {
         for (const cloudName in clouds) {
             for (const script of watched) {
                 ensureRunning(ns, script, cloudName);
-                await ns.sleep(50); 
+                await ns.sleep(50);
             }
         }
 
@@ -81,8 +81,12 @@ export async function main(ns) {
             }
         }
 
-        // programs auto buy
-        // import and run here sync (requires singularity)
+        // TOR router and programs auto buy (requires singularity)
+
+        // Stock market
+        // if (ns.stock.hasWseAccount & ns.stock.hasTixApiAccess & ns.stock.has4SDataTixApi) {
+        //     ensureRunning(ns, "/stocks/stockmarket.js");
+        // }
 
         // set in cfg.json
         await ns.sleep(cfg.daemonSleep);

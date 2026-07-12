@@ -123,23 +123,25 @@ export async function main(ns) {
     let cloudNames = Object.keys(clouds);                     // fills array with cloud names
 
     // iterate buyrep.js on all but one cloud servers - leaving one free for now
-    for (let i = 1; i < cloudNames.length; i++) {
-        ensureRunning(ns, "buyrep.js", cloudNames[i]);
+    if (cloudNames.length > 0) {
+        for (let i = 1; i < cloudNames.length; i++) {
+            ensureRunning(ns, "buyrep.js", cloudNames[i]);
+        }
     }
 
     // dispatch to home.js or to cloud depending on cfg. fill remaining server with buyrep if dispatching to home.
     if (cfg.deployToHome === true) {
         ns.exec("dispatch.js", "home", 1, "home");
-        ensureRunning(ns, "buyrep.js", cloudNames[0]);
-        ns.tprint("dispatch.js started on home. buyrep.js started on all owned servers.")
-
+        if (cloudNames.length > 0) {
+            ensureRunning(ns, "buyrep.js", cloudNames[0]);
+            ns.tprint("dispatch.js started on home. buyrep.js started on all cloud servers.")
+        }
     }
     else {
         ns.exec("dispatch.js", "home", 1, cloudNames[0]);
-        ns.tprint("dispatch.js and buyrep.js started on owned servers.")
+        ns.tprint("dispatch.js and buyrep.js started on cloud servers.")
 
     }
-
 
     await ns.sleep(1000);
 }
