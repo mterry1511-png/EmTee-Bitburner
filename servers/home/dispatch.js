@@ -2,6 +2,21 @@ import * as targeting from "./lib/targeting.js";
 import { scanCloud } from "./scanner.js";
 
 /**
+ * Kills any running dispatch.js/deployer.js instances on the given host,
+ * excluding the currently running process.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} host - The host to check for watched processes
+ * @returns {void}
+ */
+export function killHacks(ns, host) {
+    for (const proc of ns.ps(host)) {
+        if ((proc.filename === "dispatch.js" || proc.filename === "deployer.js") && proc.pid !== ns.pid) {
+            ns.kill(proc.pid);
+        }
+    }
+}
+
+/**
  * Dispatches deployer scripts to ranked or single targets based on the provided mode.
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
@@ -16,22 +31,10 @@ export async function main(ns) {
     scanCloud(ns, true);
     const clouds = JSON.parse(ns.read("/data/clouds.json"));    // load clouds.json
 
-    // Stops dispatch.js and deployer.js instances everywhere unless flagged for dupe (ns.args[2])
-if (!dupe) {
-    const killWatched = (host) => {
-        for (const proc of ns.ps(host)) {
-            if ((proc.filename === "dispatch.js" || proc.filename === "deployer.js") && proc.pid !== ns.pid) {
-                ns.kill(proc.pid);
-            }
-        }
-    };
-
-    for (const cloud in clouds) {
-        killWatched(cloud);
+    // Stops dispatch.js and deployer.js instances on scriptHost only, unless flagged for dupe (ns.args[2])
+    if (!dupe) {
+        killHacks(ns, scriptHost);
     }
-    killWatched("home");
-}
-
 
     // pass for help
     if (ns.args.includes("help")) {
@@ -100,7 +103,7 @@ if (!dupe) {
             // Dispatch then wait for loop
             ns.exec("deployer.js", scriptHost, 1, scriptHost, "best", target);
             launched++;
-            await ns.sleep(500);
+            await ns.sleep(10);
         }
 
         // report success
@@ -124,13 +127,14 @@ function printUsage(ns) {
     ns.tprint("=== dispatch.js ===");
     ns.tprint("Launches deployer instances to hack targets based on targeting mode.");
     ns.tprint("");
-    ns.tprint("Usage: run dispatch.js [scriptHost] [targetMode]");
+    ns.tprint("Usage: run dispatch.js [scriptHost] [targetMode] [dupe]");
     ns.tprint("");
     ns.tprint("Recommended Usage: run dispatch.js       // This runs defaults]");
     ns.tprint("");
     ns.tprint("Arguments:");
     ns.tprint("  scriptHost  - Server to run deployer and hack scripts from. Default: home");
     ns.tprint("  targetMode  - Targeting mode. Default: ranked");
+    ns.tprint("  dupe        - Skip killing existing dispatch.js/deployer.js instances. Default: false");
     ns.tprint("");
     ns.tprint("Modes:");
     ns.tprint("  ranked  - Launches one deployer per hackable server, ordered by $/sec");

@@ -63,6 +63,11 @@ function cfg(ns) {
     }
 }
 
+/**
+ * First-run setup: scans the network, auto-nukes what it can, and prints next steps.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 async function init(ns) {
     await refresh(ns, true);
     ns.tprint("\nInitialisation:");

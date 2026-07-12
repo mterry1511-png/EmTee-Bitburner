@@ -1,35 +1,52 @@
 
 /**
+ * @param {AutocompleteData} data - context about the game, useful when autocompleting
+ * @param {string[]} args - current arguments
+ * @returns {string[]} - the array of possible autocomplete options
+ */
+export function autocomplete(data, args) {
+  return ["all", "clouds", "hacknet", "hacking", "toggle", "view", "defaults"];
+}
+
+
+/**
  * Points to cfg scripts from terminal
  * 
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
  */
 export async function main(ns) {
+    let choice = ns.args[0] ?? null;
     let script;
-    const choice = await ns.prompt("Select the cfg category", {
-        type: "select",
-        choices: ["All", "Clouds", "Hacknet", "Targeting", "Toggles", "View"]
-    });
+
+    if (!choice) {
+        choice = await ns.prompt("Select the cfg category", {
+            type: "select",
+            choices: ["all", "clouds", "hacknet", "hacking", "toggle", "view", "defaults"]
+        });
+    }
 
     switch (choice) {
-        case "All":
+        case "all":
             script = "cfg/cfgall.js";
             break;
-        case "Clouds":
+        case "clouds":
             script = "cfg/cfgcloud.js";
             break;
-        case "Hacknet":
+        case "hacknet":
             script = "cfg/cfghacknet.js";
             break;
-        case "Targeting":
+        case "hacking":
             script = "cfg/cfgtarget.js";
             break;
-        case "Toggles":
+        case "toggle":
             script = "cfg/cfgtoggle.js";
             break;
-        case "View":
+        case "view":
             script = "cfg/cfgview.js";
+            break;
+        case "defaults":
+            script = "cfg/cfgdefaults.js";
             break;
     }
 

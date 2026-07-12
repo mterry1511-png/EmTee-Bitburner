@@ -1,14 +1,14 @@
 {
-  "daemonSleep": 3000,
-  "cloudPushSleep": 6000,
+  "daemonSleep": 5000,
+  "cloudPushSleep": 2000,
   "autoStocks": false,
-  "autobuyClouds": false,
-  "hacknetBuySleep": 10,
-  "hacknetPercSpend": 80,
+  "autobuyClouds": false,  
   "autobuyHacknet": false,
+  "hacknetBuySleep": 10,
+  "hacknetPercSpend": 75,
   "securityThresh": 5,
-  "moneyThresh": 0.95,
-  "targetHackFraction": 0.35,
+  "moneyThresh": 0.90,
+  "targetHackFraction": 0.25,
   "targetRequirements": {
     "minHackChance": 0.5,
     "minMoney": 10000,
@@ -16,8 +16,7 @@
     "minDispatchServers": 1,
     "maxDispatchServers": 100,
     "excludeServers": [
-      "home",
-      "cloud"
+      "home"
     ]
   },
   "leaveRamFree": 15,
@@ -26,9 +25,9 @@
     "cloudpush.js"
   ],
   "purchaseConfig": {
-    "maxPercSpend": 60,
-    "minCloudRam": 8192,
-    "targetCloudServs": 25,
+    "maxPercSpend": 50,
+    "minCloudRam": 8,
+    "targetCloudServs": 0,
     "cloudNamePresets": [
       "orion",
       "carina",
@@ -125,6 +124,5 @@
       "musca",
       "circinus"
     ]
-  },
-  "lastAugReset": 1783795216470
+  }
 }

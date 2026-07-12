@@ -184,6 +184,67 @@ export function jsonEdit(ns, key, value, filepath = "/data/cfg.json") {
 }
 
 /**
+ * Reads a nested value out of an object via a dotted key path.
+ * @param {object} obj - The object to read from
+ * @param {string} key - The dotted path to the property, e.g. "purchaseConfig.maxPercSpend"
+ * @returns {*} The value at that path, or undefined if any segment is missing
+ */
+export function getByPath(obj, key) {
+    return key.split(".").reduce((current, k) => current?.[k], obj);
+}
+
+/**
+ * Prompts a yes/no confirmation dialog before a destructive/irreversible action.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} message - The confirmation question to show the user
+ * @returns {Promise<boolean>} Whether the user confirmed
+ */
+export async function confirmAction(ns, message) {
+    const confirmed = await ns.prompt(message, { type: "boolean" });
+    return confirmed === true;
+}
+
+/**
+ * Prompts for a single config field, using the field's type to pick the right
+ * ns.prompt UI (boolean -> yes/no dialog, everything else -> text box), then
+ * parses the result. Returns undefined if the field should be left unchanged
+ * (cancelled, empty, or an invalid number).
+ * @param {NS} ns - The Netscript API object
+ * @param {{label: string, type?: "text"|"number"|"boolean"|"array"}} field
+ * @param {*} current - The field's current value, shown in the prompt message
+ * @param {*} defaultValue - The field's canonical default (from defaultcfg.json), shown in the prompt message
+ * @returns {Promise<*|undefined>}
+ */
+export async function promptField(ns, field, current, defaultValue) {
+    const type = field.type ?? "text";
+    const currentDisplay = Array.isArray(current) ? current.join(", ") : current;
+    const defaultDisplay = Array.isArray(defaultValue) ? defaultValue.join(", ") : defaultValue;
+    const message = `${field.label}\nCurrent: ${currentDisplay} | Default: ${defaultDisplay}`;
+
+    if (type === "boolean") {
+        return await ns.prompt(message, { type: "boolean" });
+    }
+
+    const input = await ns.prompt(message, { type: "text" });
+    if (input === "" || input === false) return undefined;
+
+    switch (type) {
+        case "number": {
+            const value = Number(input);
+            if (Number.isNaN(value)) {
+                ns.tprint(`WARN: "${input}" is not a valid number for ${field.label}, skipping.`);
+                return undefined;
+            }
+            return value;
+        }
+        case "array":
+            return input.split(",").map(s => s.trim()).filter(s => s.length > 0);
+        default:
+            return input;
+    }
+}
+
+/**
  * Ensures the requested script is running on the target cloud server.
  * @param {NS} ns - The Netscript API object
  * @param {string} script - The script name to ensure is running

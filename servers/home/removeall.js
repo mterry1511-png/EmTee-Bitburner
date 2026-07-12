@@ -1,3 +1,8 @@
+/**
+ * Prompts for confirmation, then deletes every file on the current host.
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
 export async function main(ns) {
     const hostname = ns.getHostname();
     const input = await ns.prompt(`WARNING: Delete all files on ${hostname}?`, { type: "boolean" });

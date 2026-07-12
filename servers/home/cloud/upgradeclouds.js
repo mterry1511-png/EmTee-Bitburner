@@ -9,7 +9,7 @@ import * as format from "../lib/format.js";
  * @returns {Promise<void>}
  */
 export async function main(ns) {
-    const cfg = JSON.parse(ns.read("/data/cfg.json"));
+    let cfg = JSON.parse(ns.read("/data/cfg.json"));
 
     // load clouds.json
     let clouds;
@@ -37,8 +37,8 @@ export async function main(ns) {
     // preset names list in cfg.json
     const cloudNames = cfg.purchaseConfig.cloudNamePresets;
 
-    // buy behaviour
-    while (Object.keys(clouds).length < cfg.purchaseConfig.targetCloudServs) {
+    // buy behaviour - buy up to min servers - breaking if autobuyclouds is false at any point
+    while (Object.keys(clouds).length < cfg.purchaseConfig.targetCloudServs && cfg.autobuyClouds) {
         const randomName = cloudNames[Math.floor(Math.random() * cloudNames.length)];
         if (clouds[randomName]) {
             continue;
@@ -46,8 +46,9 @@ export async function main(ns) {
 
         // execute buy
         await minBuy(ns, randomName);
-        clouds = JSON.parse(ns.read("/data/clouds.json")); // re-read after each buy
-        await ns.sleep(1000);
+        clouds = JSON.parse(ns.read("/data/clouds.json"));      // re-read after each buy
+        cfg = JSON.parse(ns.read("/data/cfg.json"));            // re-read after each buy
+        await ns.sleep(100);
     }
 
     // refresh json and clouds var before upgrading 
@@ -57,6 +58,9 @@ export async function main(ns) {
 
     // upgrade behaviour
     for (const cloud in clouds) {
+        cfg = JSON.parse(ns.read("/data/cfg.json"));
+        if (!cfg.autobuyClouds) break;                  // breaks if autobuyclouds is false at any point
+
         const currentRam = clouds[cloud].maxRam;
         const player = ns.getPlayer();
 
