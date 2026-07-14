@@ -16,11 +16,13 @@ export async function main(ns) {
     }
     // and on home
     killHacks(ns, "home");
+    await ns.sleep(2000);
+
 
     // start on clouds
     if (cloudNames.length > 0) {
-        for (let i = 0; i < cloudNames.length; i++) {
-            ns.exec("dispatch.js", "home", 1, cloudNames[i], "ranked", true);
+        for (const cloudName of cloudNames) {
+            ns.exec("dispatch.js", cloudName, 1, cloudName, "ranked", true);
         }
     }
     // and on home

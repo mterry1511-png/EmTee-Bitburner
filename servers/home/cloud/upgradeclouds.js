@@ -28,10 +28,10 @@ export async function main(ns) {
         ns.print("\nminCloudRam (" + configuredRam + ") is not a usable number - falling back to " + minPurchasableRam + "GB.");
     }
     const requestedRam = Math.max(Number(configuredRam) || minPurchasableRam, minPurchasableRam);
-    const targetRam = Math.min(Math.pow(2, Math.ceil(Math.log2(requestedRam))), maxPurchasableRam);
+    const targetRamBase = Math.min(Math.pow(2, Math.ceil(Math.log2(requestedRam))), maxPurchasableRam);
 
-    if (targetRam !== requestedRam) {
-        ns.print("\nminCloudRam (" + requestedRam + "GB) is not a valid power-of-2 server size - rounded up to " + targetRam + "GB.");
+    if (targetRamBase !== requestedRam) {
+        ns.print("\nminCloudRam (" + requestedRam + "GB) is not a valid power-of-2 server size - rounded up to " + targetRamBase + "GB.");
     }
 
     // preset names list in cfg.json
@@ -63,21 +63,36 @@ export async function main(ns) {
 
         const currentRam = clouds[cloud].maxRam;
         const player = ns.getPlayer();
+        let targetRam = targetRamBase;
+        let isFirstLoop = true;
 
-        if (currentRam < targetRam) {
+        for (; targetRam >= currentRam; targetRam = targetRam / 2) {
             const cost = ns.cloud.getServerUpgradeCost(cloud, targetRam);
 
             if ((player.money * (cfg.purchaseConfig.maxPercSpend / 100)) > cost) {
                 if (ns.cloud.upgradeServer(cloud, targetRam)) {
-                    ns.print("\nUpgraded " + cloud + " to " + targetRam + "GB");
+                    if (isFirstLoop) { ns.print("\n") }               // formatting for tail window
+                    ns.print("Upgraded " + cloud + " to " + targetRam + "GB");
 
                     // update json
                     clouds[cloud].maxRam = targetRam;
                     ns.write("/data/clouds.json", JSON.stringify(clouds), "w");
+                    break;
                 }
             }
             else {
-                ns.print("\nCould not afford " + targetRam + "GB upgrade on " + cloud + ". Requires " + format.money(cost));
+                if (isFirstLoop) {
+                    ns.print("\nCould not afford " + targetRam + "GB upgrade on " + cloud + ". Requires " + format.money(cost));
+                    isFirstLoop = false;
+                }
+
+                // break if not going to attempt another loop iteration
+                if ((targetRam / 2) <= currentRam) {
+                    break;
+                }
+                else {
+                    ns.print(". Attempting " + (targetRam / 2) + "GB.")
+                }
             }
         }
     }

@@ -30,6 +30,7 @@ export function getTarget(ns, mode) {
             // print function
             printTarget(ns, target.hostname, mode, target.moneyPerSec);
             // returns hostname given from mode specific function 
+            ns.print(target. hostname);
             return target.hostname;
         }
 

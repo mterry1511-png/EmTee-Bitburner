@@ -34,6 +34,7 @@ export async function main(ns) {
     // Stops dispatch.js and deployer.js instances on scriptHost only, unless flagged for dupe (ns.args[2])
     if (!dupe) {
         killHacks(ns, scriptHost);
+        await ns.sleep(2000);
     }
 
     // pass for help
