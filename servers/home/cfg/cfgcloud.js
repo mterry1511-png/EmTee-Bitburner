@@ -13,6 +13,7 @@ export async function main(ns) {
         { key: "purchaseConfig.maxPercSpend", label: "Max % Spend", type: "number" },
         { key: "purchaseConfig.minCloudRam", label: "Min Cloud RAM", type: "number" },
         { key: "purchaseConfig.targetCloudServs", label: "Target Cloud Servers", type: "number" },
+        { key: "autobuyClouds", label: "Autobuy cloud servers?", type: "boolean" },
     ];
 
     for (const field of fields) {
