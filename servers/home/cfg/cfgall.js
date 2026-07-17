@@ -15,12 +15,10 @@ export async function main(ns) {
         { key: "cloudPushSleep", label: "Cloud Push Sleep (ms)", type: "number" },
         { key: "hacknetBuySleep", label: "Hacknet Buy Sleep (ms)", type: "number" },
         { key: "hacknetPercSpend", label: "Hacknet Percent Spend", type: "number" },
-        { key: "autobuyHacknet", label: "Autobuy Hacknet? Bool", type: "boolean" },
         { key: "securityThresh", label: "Security Threshold", type: "number" },
         { key: "moneyThresh", label: "Money Threshold", type: "number" },
         { key: "targetHackFraction", label: "Target Hack Fraction", type: "number" },
         { key: "leaveRamFree", label: "Leave RAM Free (GB)", type: "number" },
-        { key: "deployToHome", label: "Deploy to home? Bool", type: "boolean" },
 
         { key: "targetRequirements.minHackChance", label: "Min Hack Chance", type: "number" },
         { key: "targetRequirements.minMoney", label: "Min Money", type: "number" },

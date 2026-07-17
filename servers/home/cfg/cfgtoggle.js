@@ -13,7 +13,8 @@ export async function main(ns) {
     const fields = [
         { key: "autobuyClouds", label: "Autobuy cloud servers?", type: "boolean" },
         { key: "autobuyHacknet", label: "Autobuy hacknet?", type: "boolean" },
-        { key: "autoStocks", label: "Run Stock Market Tool?", type: "boolean" }
+        { key: "autoStocks", label: "Run Stock Market Tool?", type: "boolean" },
+        { key: "deployToHome", label: "Deploy to home? Bool", type: "boolean" }
     ];
 
     if (useDefaults) {
