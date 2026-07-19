@@ -1,6 +1,7 @@
 {
   "daemonSleep": 5000,
   "cloudPushSleep": 2000,
+  "refreshInterval": 5,
   "autoStocks": false,
   "autobuyClouds": false,  
   "autobuyHacknet": false,

@@ -24,9 +24,9 @@ export async function main(ns) {
                 "purchaseConfig.maxPercSpend": 99,
                 "purchaseConfig.minCloudRam": 2,
                 "purchaseConfig.targetCloudServs": 1,
-                "securityThresh": 3,
-                "moneyThresh": 0.85,
-                "targetHackFraction": 0.15
+                // "securityThresh": 3,
+                // "moneyThresh": 0.85,
+                // "targetHackFraction": 0.15
             }
             break;
 
@@ -37,9 +37,9 @@ export async function main(ns) {
                 "purchaseConfig.maxPercSpend": 99,
                 "purchaseConfig.minCloudRam": 8,
                 "purchaseConfig.targetCloudServs": 8,
-                "securityThresh": 3,
-                "moneyThresh": 0.85,
-                "targetHackFraction": 0.15
+                // "securityThresh": 3,
+                // "moneyThresh": 0.85,
+                // "targetHackFraction": 0.15
             }
             break;
 
@@ -50,9 +50,9 @@ export async function main(ns) {
                 "purchaseConfig.maxPercSpend": 80,
                 "purchaseConfig.minCloudRam": 128,
                 "purchaseConfig.targetCloudServs": 25,
-                "securityThresh": 3,
-                "moneyThresh": 0.85,
-                "targetHackFraction": 0.15
+                // "securityThresh": 3,
+                // "moneyThresh": 0.85,
+                // "targetHackFraction": 0.15
             }
             break;
 
@@ -63,9 +63,9 @@ export async function main(ns) {
                 "purchaseConfig.maxPercSpend": 60,
                 "purchaseConfig.minCloudRam": 8192,
                 "purchaseConfig.targetCloudServs": 25,
-                "securityThresh": 5,
-                "moneyThresh": 0.95,
-                "targetHackFraction": 0.35
+                // "securityThresh": 5,
+                // "moneyThresh": 0.95,
+                // "targetHackFraction": 0.35
             }
             break;
 
@@ -76,9 +76,9 @@ export async function main(ns) {
                 "purchaseConfig.maxPercSpend": 60,
                 "purchaseConfig.minCloudRam": 524288,
                 "purchaseConfig.targetCloudServs": 25,
-                "securityThresh": 5,
-                "moneyThresh": 0.95,
-                "targetHackFraction": 0.35
+                // "securityThresh": 5,
+                // "moneyThresh": 0.95,
+                // "targetHackFraction": 0.35
             }
             break;
 
@@ -89,9 +89,9 @@ export async function main(ns) {
                 "purchaseConfig.maxPercSpend": 60,
                 "purchaseConfig.minCloudRam": 1048576,
                 "purchaseConfig.targetCloudServs": 25,
-                "securityThresh": 5,
-                "moneyThresh": 0.95,
-                "targetHackFraction": 0.35
+                // "securityThresh": 5,
+                // "moneyThresh": 0.95,
+                // "targetHackFraction": 0.35
             }
             break;
 

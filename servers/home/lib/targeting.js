@@ -1,6 +1,16 @@
 import { scanNetwork } from "../scanner.js";
 import * as format from "../lib/format.js";
 
+/**
+ * @typedef {"best"|"ranked"|"easy"|"hacklvl"} TargetMode
+ */
+
+/**
+ * Known targeting modes accepted by targeting logic.
+ * @type {TargetMode[]}
+ */
+export const knownModes = ["best", "ranked", "easy", "hacklvl"];
+
 // Normal usage: Call getTarget directly. See targetingREADME.txt for full usage.
 /**
  * Selects a target based on the requested targeting mode.
@@ -16,7 +26,7 @@ export async function main(ns) {
 /**
  * Chooses a target hostname or ranked list according to the requested mode.
  * @param {NS} ns - The Netscript API object
- * @param {string} mode - The targeting mode (best, ranked, hacklvl, easy)
+ * @param {TargetMode|string|undefined} mode - The targeting mode or raw hostname
  * @returns {string|array} The target hostname or array of hostnames based on mode
  */
 export function getTarget(ns, mode) {
@@ -69,7 +79,7 @@ export function getTarget(ns, mode) {
             // Shares getBestMoney with "best" case but returns an array of hostnames
             const targets = getBestMoney(ns);
             //print function
-            ns.print("Hackable servers ranked in array, n=" + targets.length);
+            ns.print("Hackable servers ranked, n=" + targets.length);
             return targets.map(t => t.hostname);
         }
     }
@@ -80,7 +90,7 @@ export function getTarget(ns, mode) {
  * Prints a human-readable targeting result to the terminal.
  * @param {NS} ns - The Netscript API object
  * @param {string} target - The hostname of the target server
- * @param {string} mode - The targeting mode (best, hacklvl, easy)
+ * @param {TargetMode} mode - The targeting mode (best, hacklvl, easy)
  * @param {number} [moneyPerSec] - The money per second for this target
  * @returns {void}
  */

@@ -1,7 +1,7 @@
 // import functions required
 import { scanNetwork } from "./scanner.js";
 import { scanCloud } from "./scanner.js";
-import { autoNuke } from "./lib/util.js";
+import { autoNuke, getRootedServers } from "./lib/util.js";
 
 
 
@@ -31,9 +31,10 @@ export async function main(ns, quiet = false) {
         autoNuke(ns, targetServer.hostname, true);
     }
 
-    // Refresh "/data/networks.json and clouds.json"
+    // Refresh "/data/networks.json, clouds.json, and rooted.json"
     scanNetwork(ns, true);
     scanCloud(ns, true);
+    getRootedServers(ns);
 
     // Print for user
 //     ns.ui.clearTerminal();

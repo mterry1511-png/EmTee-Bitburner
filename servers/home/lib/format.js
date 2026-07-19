@@ -62,3 +62,24 @@ export function num(number) {
 export function money(number) {
     return "$" + num(number);
 }
+
+
+
+/**
+ * Format a millisecond duration as seconds below one minute, otherwise
+ * minutes and seconds (e.g. "45s", "3m 12s").
+ *
+ * @export
+ * @param {number} ms
+ * @returns {string}
+ */
+export function duration(ms) {
+    const totalSec = Math.round(ms / 1000);
+
+    if (totalSec < 60) return totalSec + "s";
+
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+
+    return min + "m " + sec + "s";
+}

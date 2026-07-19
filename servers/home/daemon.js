@@ -28,6 +28,9 @@ export async function main(ns) {
     ns.ui.moveTail(1450, 0);
     ns.ui.resizeTail(250, 350);
 
+    ns.disableLog("disableLog");
+    ns.disableLog("sleep");
+
     // close all children when killed
     ns.atExit(() => {
         for (const cloudName in clouds) {
@@ -36,6 +39,8 @@ export async function main(ns) {
             }
         }
     });
+
+    ns.print("\n\nDaemon started...\n\n");
 
     while (true) {
         // load config
@@ -54,7 +59,16 @@ export async function main(ns) {
 
         //// MAIN EXECUTION BLOCK
         // refresh network, autonuke+root, update networks.json
-        await refresh(ns, true);
+        // relinquishes control of refresh.js to scheduler. 
+        if (!ns.isRunning("scheduler.js", "home")) {
+            await refresh(ns, true);
+        }
+
+        // print ERROR if cfg.daemonSleep is smaller than cfg.refreshInterval. This will cause stale data in this script
+        if (cfg.daemonSleep < cfg.refreshInterval) {
+            ns.tprint("ERROR: cfg.daemonSleep is smaller than cfg.refreshInterval. Exiting daemon.js");
+            return;
+        }
 
         // upgrade clouds up to mincloudRAM if upgrade costs less than maxPercSpend (both in cfg.json)
         if (cfg.autobuyClouds === true) {

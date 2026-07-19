@@ -250,7 +250,7 @@ export async function promptField(ns, field, current, defaultValue) {
  * @param {string} script - The script name to ensure is running
  * @param {string} host - The target server hostname
  * @param {number|null} [pid=null] - If provided, checks by PID instead of script name
- * @returns {boolean} Whether the script was executed by ensureRunning 
+ * @returns {boolean} Whether the script was executed by ensureRunning
  */
 export function ensureRunning(ns, script, host, pid = null) {
     let ran;
@@ -284,6 +284,27 @@ export function ensureRunning(ns, script, host, pid = null) {
             break;
     }
     return ran;
+}
+
+// Computes rooted servers and caches result to /data/rooted.json
+/**
+ * Computes the hostnames of all servers we have root access on (excluding home),
+ * combining scanned network servers and purchased cloud servers, and writes
+ * the result to /data/rooted.json for other scripts to read without recomputing.
+ * @param {NS} ns - The Netscript API object
+ * @returns {string[]} Array of rooted server hostnames
+ */
+export function getRootedServers(ns) {
+    const networks = JSON.parse(ns.read("/data/networks.json"));
+    const clouds = JSON.parse(ns.read("/data/clouds.json"));
+
+    const rootedFromScan = networks
+        .filter((server) => server.hasAdminRights && !server.purchasedByPlayer)
+        .map((server) => server.hostname);
+
+    const rooted = [...rootedFromScan, ...Object.keys(clouds)];
+    ns.write("/data/rooted.json", JSON.stringify(rooted), "w");
+    return rooted;
 }
 
 

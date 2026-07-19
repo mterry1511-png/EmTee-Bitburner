@@ -27,6 +27,11 @@ export async function main(ns) {
     const targetMode = ns.args[1] ?? "ranked";
     const dupe = String(ns.args[2] ?? false).toLowerCase() === "true";
 
+    // pass for help
+    if (ns.args.includes("help")) {
+        printUsage(ns);
+        return;
+    }
     // update clouds
     scanCloud(ns, true);
     const clouds = JSON.parse(ns.read("/data/clouds.json"));    // load clouds.json
@@ -37,11 +42,7 @@ export async function main(ns) {
         await ns.sleep(2000);
     }
 
-    // pass for help
-    if (ns.args.includes("help")) {
-        printUsage(ns);
-        return;
-    }
+
 
     // Load config
     const cfg = JSON.parse(ns.read("/data/cfg.json"));
@@ -115,6 +116,7 @@ export async function main(ns) {
     else {
         // single target behaviour
         ns.exec("deployer.js", scriptHost, 1, scriptHost, targetMode);
+        ns.print("Deployed on target '" + targetMode + ".");
     }
 }
 
@@ -128,21 +130,22 @@ function printUsage(ns) {
     ns.tprint("=== dispatch.js ===");
     ns.tprint("Launches deployer instances to hack targets based on targeting mode.");
     ns.tprint("");
-    ns.tprint("Usage: run dispatch.js [scriptHost] [targetMode] [dupe]");
+    ns.tprint("Usage: run dispatch.js [scriptHost] [targetMode|targetHost] [dupe]");
     ns.tprint("");
-    ns.tprint("Recommended Usage: run dispatch.js       // This runs defaults]");
+    ns.tprint("Recommended Usage: run dispatch.js       // This runs defaults");
     ns.tprint("");
     ns.tprint("Arguments:");
     ns.tprint("  scriptHost  - Server to run deployer and hack scripts from. Default: home");
-    ns.tprint("  targetMode  - Targeting mode. Default: ranked");
+    ns.tprint("  targetMode  - Targeting mode or raw hostname. Default: ranked");
     ns.tprint("  dupe        - Skip killing existing dispatch.js/deployer.js instances. Default: false");
     ns.tprint("");
     ns.tprint("Modes:");
     ns.tprint("  ranked  - Launches one deployer per hackable server, ordered by $/sec");
     ns.tprint("  best    - Launches a single deployer against the highest value target");
     ns.tprint("  easy    - Launches a single deployer against n00dles");
+    ns.tprint("  <hostname> - Uses the hostname directly as the target");
     ns.tprint("");
     ns.tprint("Examples:");
     ns.tprint("  run dispatch.js home ranked");
-    ns.tprint("  run dispatch.js cloud best")
+    ns.tprint("  run dispatch.js cloud best true")
 }
