@@ -9,6 +9,7 @@ lerna-debug.log*
 
 #
 # ignore files- user specified
+/docs/markdown
 #
 
 #

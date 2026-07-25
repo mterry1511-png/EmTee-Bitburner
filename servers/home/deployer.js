@@ -23,11 +23,11 @@ export async function main(ns) {
     ns.disableLog("sleep");
 
     // open tail by default
-    ns.ui.openTail();
-    ns.ui.setTailMinimized(true); // true: min, false: max
+    // ns.ui.openTail();               // if tail wants opening
+    ns.ui.setTailMinimized(true);   // true: min, false: max
     ns.ui.moveTail(1420, 450);
 
-    await ns.sleep(1500);               // allows dispatch to end and frees up RAM
+    await ns.sleep(1000);               // allows dispatch to end and frees up RAM
     await start(ns, scriptHost, targetMode, target);
 }
 

@@ -102,10 +102,13 @@ export async function main(ns) {
                 await ns.sleep(5000);
             }
 
-            // Dispatch then wait for loop
+            // Dispatch then wait for loop - stagger launches so deployers don't all wake up and
+            // consume RAM simultaneously. Deployer.js sleeps 1500ms on startup, so we wait 3500ms
+            // (1500ms + 2000ms buffer for initialization) between launches to ensure each deployer
+            // has stabilized before the next one starts reserving RAM.
             ns.exec("deployer.js", scriptHost, 1, scriptHost, "best", target);
             launched++;
-            await ns.sleep(10);
+            await ns.sleep(3500);
         }
 
         // report success
