@@ -44,18 +44,26 @@ export async function main(ns) {
     // import config file
     let cfg = JSON.parse(ns.read("/data/cfg.json"));
 
-    //check for first run since reset?
+    // Post-aug-reset check: compare the game's live lastAugReset timestamp against the one
+    // cfg.json remembers from the previous init.js run. Different => we've reset since then.
     const resetInfo = ns.getResetInfo();
     const isFirstRunSinceReset = cfg.lastAugReset !== resetInfo.lastAugReset;
     // and if it is - run cfgall first before any of this
     if (isFirstRunSinceReset) {
 
+        // Reset config to defaults. ns.run() does NOT block - it hands back a PID immediately -
+        // so poll ns.isRunning() until cfgall.js exits before reading cfg.json back below.
         const defaulterPid = ns.run("/cfg/cfgall.js", 1, "default");
         while (ns.isRunning(defaulterPid)) {
             await ns.sleep(200);
         }
         ns.tprint("New augmentation reset detected — default cfg loaded.");
 
+        // Superseded draft of the block above (interactive cfgall.js instead of "default").
+        // IMPORTANT: this dead block contains the ONLY jsonEdit that ever writes
+        // cfg.lastAugReset. With it commented out, cfg.lastAugReset is never updated, so
+        // isFirstRunSinceReset above stays true forever and every init.js run redoes the
+        // full bootstrap (including wiping cfg.json back to defaults). See findings.
         //     //option to launch cfgall.js  0 waits for the config to close before continuing
         //     const pid = ns.run("cfg/cfgall.js", 1);
         //     while (ns.isRunning(pid)) {
@@ -64,7 +72,10 @@ export async function main(ns) {
         //     jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
         // }
 
+        // Re-read from disk: cfgall.js rewrote cfg.json in another process, so the `cfg`
+        // object read at the top of main() is stale.
         cfg = JSON.parse(ns.read("/data/cfg.json"));
+        // Placeholder for a future collected-results string; printResults() ignores it today.
         const results = "";
 
         // Fun little countdown nonsense
@@ -77,15 +88,21 @@ export async function main(ns) {
         // read full server information to servers
         const servers = JSON.parse(ns.read("/data/networks.json"));
 
-        // exec autoNuke on all servers
+        // An aug reset revokes root on every server, so re-nuke everything we now qualify for.
+        // The `true` third arg is autoNuke's `quiet` flag - suppresses per-server log spam.
         for (const targetServer of servers) {
             autoNuke(ns, targetServer.hostname, true);
         }
 
-        // Refresh "/data/networks.json"
+        // Re-scan so networks.json records the root access just gained above -
+        // the first scan ran before any nuking, so its hasAdminRights flags are now out of date.
         scanNetwork(ns, true);
 
-        ns.kill("daemon.js", "home");   // this kill only works when daemon.js was ran with no args 
+        // Restart the daemon so it picks up the freshly-defaulted cfg.json.
+        // ns.kill(filename, host, ...args) requires an EXACT args match, so this only kills a
+        // daemon.js that was launched with no args - a daemon started with args survives and
+        // you end up with two. Prefer PID-based killing via ns.ps() (see findings).
+        ns.kill("daemon.js", "home");
         ns.run("daemon.js", 1);
 
         // exec buyRAM
@@ -105,10 +122,11 @@ export async function main(ns) {
 
 
     /**
-     * Prints a summary of the initialisation results to the terminal.
+     * Prints the post-bootstrap summary and next-step hints to the terminal.
+     * Terminal-facing, so ns.tprint rather than ns.print.
      * @param {NS} ns - The Netscript API object
-     * @param {string} results - The collected result output for display
-     * @param {object} cfg - The loaded configuration object
+     * @param {string} results - Currently unused; reserved for a collected results string
+     * @param {object} cfg - The freshly re-read configuration object; only cfg.watchedScripts is displayed
      * @returns {Promise<void>}
      */
     async function printResults(ns, results, cfg) {
@@ -135,7 +153,10 @@ export async function main(ns) {
 
 
     /**
-     * Plays a stylised boot animation sequence before the main initialisation work begins.
+     * Plays a stylised cyberpunk boot animation in the terminal.
+     * Purely cosmetic - it changes no state and blocks for roughly 10 seconds while it runs.
+     * Works by repeatedly clearing the terminal (ns.ui.clearTerminal) and re-printing a frame,
+     * which is why every helper inside pairs a cls() with a term().
      * @param {NS} ns - The Netscript API object
      * @returns {Promise<void>}
      */
@@ -171,16 +192,20 @@ export async function main(ns) {
         // -----------------------------
         // Helper functions
         // -----------------------------
-        const cls = () => ns.ui.clearTerminal();
-        const term = (text = "") => ns.tprint(text);
+        const cls = () => ns.ui.clearTerminal();            // wipe the terminal (one animation frame)
+        const term = (text = "") => ns.tprint(text);        // print one animation frame
 
+        // Inclusive on both ends: randInt(0, n - 1) is the safe index form used below.
         const randInt = (min, max) =>
             Math.floor(Math.random() * (max - min + 1)) + min;
 
-        const randChoice = (arr) => arr[randInt(0, arr.length - 1)];
+        const randChoice = (arr) => arr[randInt(0, arr.length - 1)];    // random element
+        const randChar = () => chars[randInt(0, chars.length - 1)];     // random glyph from `chars`
 
-        const randChar = () => chars[randInt(0, chars.length - 1)];
-
+        /**
+         * Builds one row of random glyphs, `width` characters wide.
+         * @returns {string} A single line of visual noise
+         */
         function randomLine() {
             let line = "";
             for (let i = 0; i < width; i++) {
@@ -189,6 +214,11 @@ export async function main(ns) {
             return line;
         }
 
+        /**
+         * Builds a full screen of noise, then overwrites a few random rows with flavour text
+         * so readable messages appear to surface out of the static.
+         * @returns {string} A `height`-line frame, newline joined
+         */
         function randomFrame() {
             const lines = [];
 
@@ -196,7 +226,8 @@ export async function main(ns) {
                 lines.push(randomLine());
             }
 
-            // Inject 1–3 messages
+            // Inject 1–3 messages. Rows are picked independently, so the same row can be
+            // chosen twice and one message simply overwrites the other - harmless here.
             const injections = randInt(1, 3);
             for (let i = 0; i < injections; i++) {
                 lines[randInt(0, height - 1)] = randChoice(messages);
@@ -205,6 +236,13 @@ export async function main(ns) {
             return lines.join("\n");
         }
 
+        /**
+         * Reveals text one character at a time, redrawing the whole terminal each step
+         * with a block cursor appended, then settles on the finished line.
+         * @param {string} text - The line to type out
+         * @param {number} [delay=30] - Milliseconds between characters
+         * @returns {Promise<void>}
+         */
         async function typeLine(text, delay = 30) {
             let current = "";
             for (const ch of text) {
@@ -217,6 +255,13 @@ export async function main(ns) {
             term(text);
         }
 
+        /**
+         * Animates a cosmetic 0-100% progress bar. Nothing is actually being measured -
+         * `duration` is split evenly across 25 fixed steps.
+         * @param {string} label - Caption printed above the bar
+         * @param {number} [duration=300] - Total milliseconds the bar takes to fill
+         * @returns {Promise<void>}
+         */
         async function fakeProgress(label, duration = 300) {
             const steps = 25;
             for (let i = 0; i <= steps; i++) {
@@ -230,6 +275,16 @@ export async function main(ns) {
             }
         }
 
+        /**
+         * Prints `text` on every other iteration, pausing between each.
+         * Despite the name this does not flash: there is no cls() in the loop, so the "off"
+         * iterations add nothing and the result is `times / 2` stacked copies of the line
+         * appearing one after another. See findings.
+         * @param {string} text - The line to print
+         * @param {number} [times=4] - Loop iterations (half of which print)
+         * @param {number} [delay=120] - Milliseconds between iterations
+         * @returns {Promise<void>}
+         */
         async function flash(text, times = 4, delay = 120) {
             for (let i = 0; i < times; i++) {
                 if (i % 2 === 0) term(text);
@@ -302,7 +357,7 @@ export async function main(ns) {
 `);
 
         // -----------------------------
-        // Phase 7: Dramatic countdown
+        // Phase 7: (unused - countdown already happens in Phase 5)
         // -----------------------------
 
 

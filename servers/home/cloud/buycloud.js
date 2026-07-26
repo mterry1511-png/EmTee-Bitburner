@@ -1,14 +1,20 @@
 import * as format from "../lib/format.js"
 
 /**
- * Handles CLI arguments and dispatches the appropriate cloud server purchase workflow.
+ * Terminal entry point. Reads the desired server name and the min-buy flag from
+ * ns.args and dispatches to either buy() (largest affordable server) or
+ * minBuy() (smallest possible server, waits for money).
+ *
+ * Both paths append the new server to /data/clouds.json themselves rather than
+ * re-running scanCloud, so the registry is up to date the instant the purchase
+ * lands.
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
  */
 export async function main(ns) {
     // handle args
     const newCloudName = ns.args[0];
-    const minBuyFlag = ns.args[1];              // pass 1 to buy 2gb server instead
+    const minBuyFlag = ns.args[1];              // pass 1 to buy the smallest (2GB) server instead
 
     //calls help
     const help = ns.args.includes("help");
@@ -29,6 +35,10 @@ export async function main(ns) {
 
 /**
  * Prints usage instructions for the cloud server purchasing script.
+ * NOTE: the text below is out of date on two counts - there is no
+ * "targetserver" argument any more (cloud purchases need no source server), and
+ * the min-buy flag buys a 2GB server, not 32GB. Flagged in the findings notes;
+ * left as-is because these are string literals, i.e. code.
  * @param {NS} ns - The Netscript API object
  * @returns {void}
  */
@@ -42,9 +52,18 @@ function printusage(ns) {
 }
 
 /**
- * Purchases the largest affordable cloud server and records it in the cloud registry.
+ * Buy the largest cloud server the player can currently afford and append it to
+ * /data/clouds.json.
+ *
+ * Sizing works by doubling: start at the 2GB minimum and keep doubling while the
+ * NEXT size up is still affordable, then buy the last size that was. Cloud
+ * server RAM must be a power of 2, which is why doubling rather than a
+ * cost-per-GB calculation is used.
+ *
+ * Not exported - only reachable via main(). The always-buy-small sibling
+ * minBuy() below is the one other scripts import.
  * @param {NS} ns - The Netscript API object
- * @param {string} newCloudName - The name for the new cloud server
+ * @param {string} newCloudName - The requested name for the new cloud server. Falls back to "cloud" if falsy
  * @returns {Promise<void>}
  */
 async function buy(ns, newCloudName) {
@@ -55,26 +74,32 @@ async function buy(ns, newCloudName) {
     }
 
     while (true) {
-        // if we can't afford a server with double the RAM of last tested, buy it and end program 
+        // if we can't afford a server with double the RAM of last tested, buy it and end program
         if (ns.cloud.getServerCost(affordableram * 2) > ns.getPlayer().money) {
-            // can't afford double, so buy current amount
+            // can't afford double, so buy current amount.
+            // Reassigning from the return value matters: the game appends "-0", "-1"
+            // etc. when the requested hostname is already taken, so the name we
+            // asked for is not necessarily the name we got. Everything below must
+            // use the returned name, not the requested one.
             newCloudName = ns.cloud.purchaseServer(newCloudName.toString(), affordableram);
             // print results to terminals
             ns.tprint("Bought server " + newCloudName + " with " + affordableram + "GB of RAM for " + format.money(ns.cloud.getServerCost(affordableram)) + ". Remaining money: " + format.money(ns.getPlayer().money));
             ns.print("Bought server " + newCloudName + " with " + affordableram + "GB of RAM for " + format.money(ns.cloud.getServerCost(affordableram)) + ". Remaining money: " + format.money(ns.getPlayer().money));
 
             // add cloud server to JSON
-            const servs = JSON.parse(ns.read("/data/clouds.json"));           // write clouds/json to an obj
+            const servs = JSON.parse(ns.read("/data/clouds.json"));           // read clouds.json into an obj
 
-            // add newly purchased server
+            // add newly purchased server, matching the { hostname: { maxRam } }
+            // shape that scanCloud writes
             servs[newCloudName] = {
                 maxRam: ns.getServerMaxRam(newCloudName)
             };
 
-            // write updated file
+            // write the registry back - read-modify-write, so existing entries survive
             ns.write("/data/clouds.json", JSON.stringify(servs), "w");
             
-            // cloudpush.js
+            // Dead code: cloudpush is now started by daemon.js via ensureRunning,
+            // so this script no longer needs to kick one off itself.
             // ns.exec("cloudpush.js", "home", 1, newCloudName);
             // await ns.sleep(100);
             return;
@@ -86,9 +111,20 @@ async function buy(ns, newCloudName) {
 }
 
 /**
- * Purchases a fixed-size cloud server and records it in the cloud registry.
+ * Buy the smallest possible cloud server (2GB) and append it to
+ * /data/clouds.json, blocking until the player can afford it.
+ *
+ * This is the "get a slot on the board cheaply, upgrade it later" path, and is
+ * the function upgradeclouds.js imports: it fills the fleet up to
+ * cfg.purchaseConfig.targetCloudServs with minimum-size servers first, then
+ * upgrades them in a separate pass. Buying small then upgrading costs the same
+ * as buying large outright, so this is strictly better than waiting.
+ *
+ * Blocking behaviour: it sleeps in 5s increments until the 2GB cost is
+ * affordable, so a caller awaiting this can be parked indefinitely if the player
+ * has no money.
  * @param {NS} ns - The Netscript API object
- * @param {string} newCloudName - The name for the new cloud server
+ * @param {string} newCloudName - The requested name for the new cloud server. Falls back to "cloud" if falsy
  * @returns {Promise<void>}
  */
 export async function minBuy(ns, newCloudName) {
@@ -97,31 +133,34 @@ export async function minBuy(ns, newCloudName) {
         newCloudName = "cloud";
     }
         
-    // if we can't afford 
+    // block until the 2GB cost is affordable
     while (ns.cloud.getServerCost(2) > ns.getPlayer().money) {
         // wait (should be fast!)
         await ns.sleep(5000);
         ns.print("\nCan't afford server - waiting for player money...")
     }
 
-    // purchase 2gb
+    // purchase 2gb - reassigning from the return value because the game appends
+    // "-0", "-1" etc. if the requested hostname is already in use
     newCloudName = ns.cloud.purchaseServer(newCloudName.toString(), 2);
 
-    // print results to terminals
+    // print results to the tail log (this runs under daemon.js, hence print not tprint)
     ns.print("\nBought server " + newCloudName + " with 2GB of RAM");
 
     // add cloud server to JSON
-    const servs = JSON.parse(ns.read("/data/clouds.json"));           // write clouds/json to an obj
+    const servs = JSON.parse(ns.read("/data/clouds.json"));           // read clouds.json into an obj
 
-    // add newly purchased server
+    // add newly purchased server, matching the { hostname: { maxRam } }
+    // shape that scanCloud writes
     servs[newCloudName] = {
         maxRam: ns.getServerMaxRam(newCloudName)
     };
 
-    // write updated file
+    // write the registry back - read-modify-write, so existing entries survive
     ns.write("/data/clouds.json", JSON.stringify(servs), "w");
 
-    // cloudpush.js
+    // Dead code: cloudpush is now started by daemon.js via ensureRunning,
+    // so this script no longer needs to kick one off itself.
     // ns.exec("cloudpush.js", "home", 1, newCloudName);
     // await ns.sleep(100);
     return;

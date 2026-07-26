@@ -211,20 +211,22 @@ export async function scanCloud(ns, quiet = false) {
     const network = JSON.parse(ns.read("/data/networks.json"));
     let clouds = {};
 
-    // loop to add server pairs if they owned clouds
-    // 
+    // Build one hostname -> { maxRam } pair per owned cloud server.
+    // "home" is purchasedByPlayer too, so it has to be excluded explicitly.
+    // maxRam is re-read live rather than taken from networks.json so a server
+    // upgraded since the last network scan still records its new size.
     for (const server of network) {
         if (server.purchasedByPlayer && server.hostname != "home") {
             let maxRam = 0;
             try {
                 maxRam = ns.getServerMaxRam(server.hostname);
             } catch {
-                continue; // server no longer exists, skip it
+                continue; // server no longer exists (deleted/renamed since the scan), skip it
             }
             clouds[server.hostname] = { maxRam };
         }
     }
-    // write updated arr to file
+    // write the rebuilt registry to file - full overwrite, not a merge
     ns.write("/data/clouds.json", JSON.stringify(clouds), "w");
 }
 

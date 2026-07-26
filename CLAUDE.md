@@ -102,3 +102,12 @@ Replaces `dispatch.js` entirely. A centralized daemon that owns all `ns.exec` ca
 Planned work on the cfg.json restructure lives in [servers/home/cfg/CLAUDE.md](servers/home/cfg/CLAUDE.md); the stockmarket.js logic outline lives in [servers/home/stocks/CLAUDE.md](servers/home/stocks/CLAUDE.md).
 
 [docs/review-findings.md](docs/review-findings.md) holds the code issues turned up by the project-wide JSDoc/comment pass — bugs, shadowed variables, dead code, DRY violations and leftover build artifacts that were logged but deliberately *not* fixed, since that pass was comments-only. **This is a transient work queue, not project state** — it's a deliberate exception to the "notes belong in CLAUDE.md, not `docs/`" rule above, made because 45 files' worth of findings would bury this file. Work through it, then delete it; anything worth keeping gets promoted into CLAUDE.md proper rather than living on in `docs/`.
+
+**Priority actions from the JSDoc pass (2026-07-26):**
+1. **Fix four confirmed bugs** (load-bearing, not cosmetic):
+   - `deployer.js:~150` — WEAKEN's `queue` never decrements; deployer stuck in WEAKEN phase forever, earning nothing and burning RAM on no-op weakens. Likely root cause of RAM pressure that motivated staggering fix.
+   - `init.js:~68` — `lastAugReset` is never written to disk (only read); every `init.js` run silently resets `cfg.json` to defaults, discarding all config tuning.
+   - `scanner.js:80-90` — BFS marks `visited` on dequeue, not enqueue; `networks.json` contains duplicates that feed into `rooted.json`, causing scheduler to double-count host RAM.
+   - `lib/util.js` — `promptField` cannot express "skip" for boolean fields; backing out of `cfgtoggle` partway turns every remaining switch off.
+2. **Verify and act on ~80 other findings** — marked REPORTED (not independently confirmed). High-value ones: DRY in cfg editors, pervasive async-without-await in cloud batch, check-RAM-then-exec race (scheduler evidence).
+3. **Update line 14** — `go.js` no longer holds the two HGW config profiles; it's now a numbered task launcher, and thresholds moved to `cfg.json` consumed by `deployer.js`.

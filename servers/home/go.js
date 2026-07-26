@@ -1,12 +1,13 @@
 import { killScriptsOnClouds } from "./lib/remotekill.js";
 
 /**
- * Task launcher with integer dispatch.
- * Usage: go [task_number]
- *
+ * Prints the task menu: every task's number, name and description.
+ * Iterates the task registry itself, so a task added to `tasks` in main() shows up here
+ * automatically with no second list to keep in sync.
  * @param {NS} ns - The Netscript API object
+ * @param {Object<string, {name: string, description: string, run: function(): Promise<void>}>} tasks - The task registry defined in main()
+ * @returns {void}
  */
-
 function printUsage(ns, tasks) {
     ns.tprint("=== Task Launcher ===\n");
     for (const [key, task] of Object.entries(tasks)) {
@@ -15,9 +16,25 @@ function printUsage(ns, tasks) {
     }
 }
 
+/**
+ * Numbered task launcher - a shortcut menu for the cloud-server chores run most often.
+ * Usage: run go.js [taskNumber]; with no arg (or an unknown one) it prints the menu.
+ *
+ * Each entry in the `tasks` registry is `{name, description, run}`, where `run` is an async
+ * closure over `ns`. Keys are object keys, so they are STRINGS - `ns.args[0]` is stringified
+ * before lookup so that `go 1` and `go "1"` both resolve.
+ *
+ * Note: this is a manual shortcut menu, not part of the automated startup chain - init.js
+ * starts daemon.js, and dispatch.js/dispatchall.js handle HGW deployment.
+ * @param {NS} ns - The Netscript API object
+ * @param {string|number} [ns.args[0]] - Task number to run; omitted or unrecognised prints usage
+ * @returns {Promise<void>}
+ */
 export async function main(ns) {
+    // Stringify + lowercase so a numeric arg still matches the string keys of `tasks`.
     const arg = String(ns.args[0] ?? "").toLowerCase();
 
+    // Task registry. Add an entry here and it appears in the menu automatically.
     const tasks = {
         0: {
             name: "Kill all buyrep and hackexp on clouds",
@@ -40,6 +57,10 @@ export async function main(ns) {
                     return;
                 }
 
+                // Launched on HOME, not on the cloud - buyrep.js is its own relay: given a
+                // cloud hostname it re-execs itself onto that cloud, then fills its RAM with
+                // share.js threads. (Contrast task 2, which execs hackexp.js on the cloud
+                // directly because hackexp.js has no such relay step.)
                 for (const cloudName of cloudNames) {
                     ns.exec("buyrep.js", "home", 1, cloudName);
                 }
@@ -58,6 +79,8 @@ export async function main(ns) {
                     return;
                 }
 
+                // Exec'd directly on each cloud with no target arg, so each instance
+                // independently resolves its own "best" target via targeting.getTarget.
                 for (const cloudName of cloudNames) {
                     ns.exec("hackexp.js", cloudName, 1);
                 }
@@ -66,12 +89,13 @@ export async function main(ns) {
         },
     };
  
-    // Show usage if no arg or invalid task
+    // Show usage if no arg or invalid task. Note task "0" is safe here: the guard tests
+    // `arg === ""` on the string, not the truthiness of the number, so "0" still dispatches.
     if (arg === "" || !tasks[arg]) {
         printUsage(ns, tasks);
         return;
     }
 
-    // Execute task
+    // Execute task. Awaited so go.js stays alive (and holds its RAM) until the task finishes.
     await tasks[arg].run();
 }

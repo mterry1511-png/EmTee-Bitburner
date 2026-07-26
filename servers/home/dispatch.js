@@ -2,10 +2,17 @@ import * as targeting from "./lib/targeting.js";
 import { scanCloud } from "./scanner.js";
 
 /**
- * Kills any running dispatch.js/deployer.js instances on the given host,
- * excluding the currently running process.
+ * Kills every dispatch.js and deployer.js process on the given host, excluding self.
+ *
+ * Deliberately PID-based (ns.ps + ns.kill(pid)) rather than ns.kill(filename, host, ...args):
+ * a filename kill only matches when the launch args match exactly, and deployers are launched
+ * with per-target args that the caller here does not know. Enumerating PIDs sidesteps that.
+ * The `proc.pid !== ns.pid` guard is the self-kill guard - without it, dispatch.js would kill
+ * itself the moment it tried to clear the host it is running on.
+ *
+ * Also exported for and used by dispatchall.js.
  * @param {NS} ns - The Netscript API object
- * @param {string} host - The host to check for watched processes
+ * @param {string} host - The host to clear of dispatch/deployer processes
  * @returns {void}
  */
 export function killHacks(ns, host) {
@@ -17,14 +24,34 @@ export function killHacks(ns, host) {
 }
 
 /**
- * Dispatches deployer scripts to ranked or single targets based on the provided mode.
+ * Launches deployer.js instances against hack targets, one deployer per target.
+ *
+ * Two modes:
+ *   - "ranked" (default): pulls the $/sec-ordered target list from targeting.getTarget, trims
+ *     it to cfg.targetRequirements.maxDispatchServers, and launches one deployer per target,
+ *     staggered, on scriptHost. Aborts early if fewer than minDispatchServers targets exist.
+ *   - anything else: treated as a single target/mode and forwarded verbatim to one deployer.
+ *
+ * Unless `dupe` is set, it first clears scriptHost of existing dispatch/deployer processes so
+ * repeated runs replace rather than stack.
+ *
+ * NOTE: the ranked loop reads free RAM and then ns.exec's a deployer - the check-then-exec
+ * race. Nothing prevents another process consuming that RAM in between, in which case the
+ * exec silently fails and `launched` is still incremented. This is the specific problem the
+ * planned scheduler replaces dispatch.js to solve (see CLAUDE.md "Scheduler").
+ *
  * @param {NS} ns - The Netscript API object
+ * @param {string} [ns.args[0]="home"] - scriptHost: server the deployers (and their hgw threads) run on
+ * @param {string} [ns.args[1]="ranked"] - targetMode: "ranked", another targeting mode, or a raw hostname
+ * @param {string} [ns.args[2]="false"] - dupe: "true" skips killing existing dispatch/deployer instances
  * @returns {Promise<void>}
  */
 export async function main(ns) {
     // handle args
     const scriptHost = ns.args[0] ?? "home";
     const targetMode = ns.args[1] ?? "ranked";
+    // Terminal args always arrive as STRINGS, so "false" would be truthy under a bare
+    // truthiness check. Stringify-lowercase-compare is the correct form.
     const dupe = String(ns.args[2] ?? false).toLowerCase() === "true";
 
     // pass for help
@@ -32,11 +59,13 @@ export async function main(ns) {
         printUsage(ns);
         return;
     }
-    // update clouds
+    // Refresh clouds.json so scriptHost is definitely known if it's a newly-purchased cloud.
     scanCloud(ns, true);
-    const clouds = JSON.parse(ns.read("/data/clouds.json"));    // load clouds.json
+    const clouds = JSON.parse(ns.read("/data/clouds.json"));    // unused below - see findings
 
-    // Stops dispatch.js and deployer.js instances on scriptHost only, unless flagged for dupe (ns.args[2])
+    // Stops dispatch.js and deployer.js instances on scriptHost only, unless flagged for dupe
+    // (ns.args[2]). The 2s sleep lets the game actually reclaim the killed processes' RAM
+    // before the availability checks below read it - kills are not instantaneous.
     if (!dupe) {
         killHacks(ns, scriptHost);
         await ns.sleep(2000);
@@ -55,11 +84,14 @@ export async function main(ns) {
         return;
     }
 
-    // Load config - min servers
+    // Load config - min servers. Floor below which dispatching isn't worth doing at all;
+    // also the point at which the RAM-wait loop below gives up rather than blocking forever.
     const minServers = cfg.targetRequirements.minDispatchServers ?? 1;
+    // Always fetched in "ranked" mode regardless of targetMode - the single-target branch at
+    // the bottom doesn't use this list at all.
     const allTargets = targeting.getTarget(ns, "ranked");
 
-    //Trim targets arr if required
+    // Trim to the max we're willing to run; allTargets is kept intact for the "N of M" print.
     const targets = allTargets.slice(0, maxServers);
     // Catch error
     if (allTargets.length < minServers) {
@@ -84,9 +116,11 @@ export async function main(ns) {
         let launched = 0;
 
 
-        // launch a deployer for each target
+        // Launch a deployer for each target, in rank order (highest $/sec first).
         for (const target of targets) {
-            // wait for RAM if we haven't hit minimum yet
+            // Block until there's room for one more deployer - but only while we're still
+            // short of minDispatchServers. Past the minimum, a RAM shortage means "good
+            // enough, stop here" rather than "wait indefinitely", so the loop returns instead.
             while (true) {
                 const availableRam = ns.getServerMaxRam(scriptHost) - ns.getServerUsedRam(scriptHost) - cfg.leaveRamFree;
                 const deployerRam = ns.getScriptRam("deployer.js", scriptHost);
@@ -102,10 +136,14 @@ export async function main(ns) {
                 await ns.sleep(5000);
             }
 
-            // Dispatch then wait for loop - stagger launches so deployers don't all wake up and
-            // consume RAM simultaneously. Deployer.js sleeps 1500ms on startup, so we wait 3500ms
-            // (1500ms + 2000ms buffer for initialization) between launches to ensure each deployer
-            // has stabilized before the next one starts reserving RAM.
+            // Dispatch then wait - stagger launches so deployers don't all wake up and start
+            // reserving RAM simultaneously. deployer.js sleeps 1000ms on startup before it
+            // begins allocating, so the 3500ms here leaves a ~2500ms buffer for it to resolve
+            // its target and get its first phase in flight before the next deployer starts.
+            //
+            // Args: (script, host, threads, scriptHost, targetMode, target). "best" is passed
+            // as targetMode but is IGNORED by the deployer, because an explicit `target` is
+            // also supplied and an explicit target always wins over mode resolution.
             ns.exec("deployer.js", scriptHost, 1, scriptHost, "best", target);
             launched++;
             await ns.sleep(3500);
@@ -117,7 +155,9 @@ export async function main(ns) {
         ns.print(success);
     }
     else {
-        // single target behaviour
+        // Single-target behaviour: forward targetMode straight through as the deployer's
+        // targetMode arg with no explicit target, so the deployer resolves it itself -
+        // whether it's a known mode ("best"/"easy"/"hacklvl") or a raw hostname.
         ns.exec("deployer.js", scriptHost, 1, scriptHost, targetMode);
         ns.print("Deployed on target '" + targetMode + ".");
     }

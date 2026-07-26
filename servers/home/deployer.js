@@ -173,9 +173,11 @@ export async function start(ns, scriptHost, targetMode, target = null) {
                 statusLine = `\nSecurity too high - ${currentSec.toFixed(2)} (current) > ${securityThreshActual.toFixed(2)} (threshold)`;
             } else if (currentMoney < moneyThresh) {
                 phase = GROW;
-                // queue is set here for the FIRST tick of the phase; every tick after
-                // (including this one, redundantly but harmlessly) it's overwritten by
-                // the recompute block below using freshly-read state.
+                // NOTE: queue is deliberately NOT set here. The recompute block below runs
+                // later in this same tick and derives it from live state, so setting it here
+                // would be immediately overwritten. Same for the HACK branch.
+                // (Contrast the WEAKEN branch above, which is the only phase whose queue is
+                // set at phase entry - and never recomputed or decremented afterwards.)
                 statusLine = "\nMoney too low - " + format.money(currentMoney) + " (current) < " + format.money(moneyThresh) + " (threshold)";
             } else {
                 phase = HACK;
