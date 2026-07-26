@@ -1,16 +1,30 @@
 import { scanNetwork } from "../scanner.js";
 
 /**
- * Dispatches utility actions based on command-line flags.
+ * Terminal entry point for this library - dispatches a utility action based on
+ * the command-line flags passed in.
+ *
+ * This file is primarily a library (autoNuke, getAvailableThreads, jsonEdit, ...
+ * are all imported elsewhere); main() only exists so the handful of utilities
+ * can also be poked at manually from the terminal.
+ *
+ * NOTE: the --getAvailableThreads branch is currently broken - see the comments
+ * on the flag consts below.
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
  */
 export async function main(ns) {
     //Determine function
+    // Lowercase every arg first so flag matching isn't case-sensitive for the user.
     const argmap = ns.args.map(a => a.toLowerCase());
     const openports = argmap.includes("--openports");
+    // BUG: argmap holds lowercased args, but this compares against a
+    // mixed-case literal, so this flag can never match and the branch below is
+    // unreachable. It also shadows the exported getAvailableThreads() function
+    // declared further down this file with a boolean.
     const getAvailableThreads = argmap.includes("--getAvailableThreads");
     const help = argmap.includes("help");
+    // No hostname arg -> operate on whichever server this script is running on.
     const targetServer = ns.args[0] ?? ns.getHostname();
     ns.print(targetServer);
     //Determine function based on args
@@ -18,6 +32,9 @@ export async function main(ns) {
         autoNuke(ns, targetServer);
     }
     else if (getAvailableThreads) {
+        // Dead branch (see above). Even if the flag matched, `getAvailableThreads`
+        // here refers to the boolean const, not the function, so calling it
+        // would throw a TypeError - and it passes 2 args to a 3-arg function.
         const threads = getAvailableThreads(ns, targetServer);
         ns.tprint("Available threads on " + targetServer + ": " + threads);
     }
@@ -28,7 +45,8 @@ export async function main(ns) {
 
 // Printusage function
 /**
- * Prints supported utility command usage.
+ * Print the supported terminal usage for this script to the terminal.
+ * Called from main() when "help" is passed as an argument.
  * @param {NS} ns - The Netscript API object
  * @returns {void}
  */
@@ -44,7 +62,15 @@ function printusage(ns) {
 
 // Auto nuke function
 /**
- * Attempts to open ports and gain root access on the target server.
+ * Run every port-opening program we own against a server, then nuke it for
+ * root access if we don't already have it.
+ *
+ * Each program is only used if the corresponding .exe actually exists on home -
+ * calling e.g. ns.brutessh() without owning BruteSSH.exe throws, so the
+ * fileExists() guards are load-bearing, not just tidiness.
+ *
+ * Safe to call on servers we already own: the nuke is skipped when
+ * hasRootAccess() is already true.
  * @param {NS} ns - The Netscript API object
  * @param {string} targetServer - The hostname of the server to nuke
  * @param {boolean} [quiet=false] - Whether to suppress verbose logging
@@ -52,6 +78,9 @@ function printusage(ns) {
  */
 export function autoNuke(ns, targetServer, quiet = false) {
     // set silent if -q specified
+    // NOTE: ns.args belongs to whichever script is *running*, so when autoNuke is
+    // imported and called as a library this also picks up a "-q" passed to the
+    // caller, not just to util.js.
     quiet = quiet || ns.args.includes("-q");
 
     // Silence all logs if quiet
@@ -59,7 +88,8 @@ export function autoNuke(ns, targetServer, quiet = false) {
         ns.disableLog("ALL");
     }
 
-    //* Opens ports then grants root
+    //* The port openers, in the order we'll try them. Each entry is both the
+    //* filename we check for on home and the switch key below.
     let runExes = [
         "BruteSSH.exe",
         "FTPCrack.exe",
@@ -104,12 +134,17 @@ export function autoNuke(ns, targetServer, quiet = false) {
     }
 
     // Get root access to targetServer server if no root access
+    // NOTE: everything below (including the backdoor status report) lives inside
+    // this if, so nothing is logged at all for servers we already had root on.
     if (!ns.hasRootAccess(targetServer)) {
         ns.nuke(targetServer);
         if (!quiet) {
             ns.print("Successfully Nuked for root");
         }
         else {
+            // Unreachable: this else only runs when quiet === true, and the
+            // inner guard then requires !quiet. The "Already had root" message
+            // never prints.
             if (!quiet) {
                 ns.print("Already had root");
             }
@@ -129,35 +164,44 @@ export function autoNuke(ns, targetServer, quiet = false) {
     }
 }
 
-// Get available threads function 
-// Returns the number of threads available on the target server, based on its RAM and the RAM required for a single thread of the specified script
-// Example usage: getAvailableThreads(ns, home, "hack.js");
-// Example gets the script RAM for hack.js, then calculates how many threads of hack.js could run on home based on its available RAM
-// Also use on cloud servers
+// Get available threads function
+// Returns how many threads of `script` will fit in the free RAM of `scriptHost`.
+// Example usage: getAvailableThreads(ns, "home", "hack.js");
+// That looks up the per-thread RAM cost of hack.js, then divides home's free RAM by it.
+// Works the same for cloud servers - just pass the cloud hostname as scriptHost.
 /**
- * Calculates how many threads of a script can run on a host.
+ * Calculate how many threads of a script will fit in a host's free RAM.
+ * Subtracts cfg.json's `leaveRamFree` headroom from the host's *max* RAM
+ * before subtracting used RAM, so the reserve is honoured on every host - not
+ * just home - and the result can go negative-then-floor if the host is small.
  * @param {NS} ns - The Netscript API object
- * @param {string} scriptHost - The host server to check available threads on
- * @param {string} script - The script name to calculate threads for
- * @returns {number} The number of available threads
+ * @param {string} scriptHost - The host server whose free RAM we're measuring
+ * @param {string} script - The script filename whose per-thread RAM cost we divide by
+ * @returns {number} The number of whole threads that fit
  */
 export function getAvailableThreads(ns, scriptHost, script) {
     const availableRam = (ns.getServerMaxRam(scriptHost) - JSON.parse(ns.read("/data/cfg.json")).leaveRamFree - ns.getServerUsedRam(scriptHost));       // always leaves space free - set in cfg.json
+    // Per-thread RAM cost of the script, as measured on that host.
     const scriptRam = ns.getScriptRam(script, scriptHost)
     return Math.floor(availableRam / scriptRam);
 }
 
 /**
- * Updates a nested value in a JSON file on disk.
+ * Update a single (possibly nested) value in a JSON file on disk.
+ * Reads the file, walks to the key via its dotted path, overwrites the value,
+ * and writes the whole object back.
  * WARNING: when this updates the *.json, this will be desynced with the VS code *.json as this is a one way operation only.
+ * Also note: intermediate objects are NOT created - every segment of the path
+ * except the last must already exist in the file, or this throws.
  * @param {NS} ns - The Netscript API object
- * @param {string} key - The dotted path to the property to update
+ * @param {string} key - The dotted path to the property to update, e.g. "purchaseConfig.maxPercSpend"
  * @param {*} value - The value to write to the target key
  * @param {string} [filepath="/data/cfg.json"] - The JSON file to edit
  * @returns {void}
  */
 export function jsonEdit(ns, key, value, filepath = "/data/cfg.json") {
-    // load json and catch synerrors
+    // load json and catch syntax errors - a malformed file should abort the
+    // edit rather than let us write garbage back over it
     let jsonObj;
     try {
         jsonObj = JSON.parse(ns.read(filepath));
@@ -171,20 +215,28 @@ export function jsonEdit(ns, key, value, filepath = "/data/cfg.json") {
     const keys = key.split(".");
     let current = jsonObj;
 
-    // "walks" deeper into the json depending on how many "." are passed in key arg
+    // "walks" deeper into the json depending on how many "." are passed in key arg.
+    // Stops one short of the end (length - 1) so `current` ends up holding the
+    // object that *contains* the final key, which is what we need to assign into.
     for (let i = 0; i < keys.length - 1; i++) {
-        current = current[keys[i]]; //
+        current = current[keys[i]];
     }
 
-    // change value passed from arg
+    // change value passed from arg - .at(-1) is the last path segment.
+    // `current` is a reference into jsonObj, so mutating it mutates jsonObj.
     current[keys.at(-1)] = value;
 
-    // write edited json back
+    // write edited json back ("w" = overwrite, not append)
     ns.write(filepath, JSON.stringify(jsonObj), "w");
 }
 
 /**
- * Reads a nested value out of an object via a dotted key path.
+ * Read a nested value out of an object via a dotted key path.
+ * The read-only counterpart to jsonEdit's path walking - used by the cfg/*.js
+ * editors to pull a field's live value out of cfg.json and its canonical
+ * default out of defaultcfg.json without re-writing the walk in each script.
+ * The `?.` in the reducer means a missing segment short-circuits to undefined
+ * instead of throwing.
  * @param {object} obj - The object to read from
  * @param {string} key - The dotted path to the property, e.g. "purchaseConfig.maxPercSpend"
  * @returns {*} The value at that path, or undefined if any segment is missing
@@ -194,7 +246,10 @@ export function getByPath(obj, key) {
 }
 
 /**
- * Prompts a yes/no confirmation dialog before a destructive/irreversible action.
+ * Prompt a yes/no confirmation dialog before a destructive/irreversible action.
+ * The `=== true` is deliberate: a "text" prompt resolves to a string and a
+ * cancelled prompt resolves to false, so this normalises anything that isn't a
+ * genuine Yes into a hard false.
  * @param {NS} ns - The Netscript API object
  * @param {string} message - The confirmation question to show the user
  * @returns {Promise<boolean>} Whether the user confirmed
@@ -205,29 +260,37 @@ export async function confirmAction(ns, message) {
 }
 
 /**
- * Prompts for a single config field, using the field's type to pick the right
- * ns.prompt UI (boolean -> yes/no dialog, everything else -> text box), then
- * parses the result. Returns undefined if the field should be left unchanged
- * (cancelled, empty, or an invalid number).
+ * Prompt for a single config field, using the field's declared type to pick the
+ * right ns.prompt UI (boolean -> real yes/no dialog, everything else -> text
+ * box), then parse the result into that type.
+ *
+ * Shared by all five interactive cfg/*.js editors. Returns undefined to mean
+ * "leave this field alone" - cancelled, submitted empty, or an unparseable
+ * number - so callers can skip the write rather than clobbering a good value.
  * @param {NS} ns - The Netscript API object
- * @param {{label: string, type?: "text"|"number"|"boolean"|"array"}} field
+ * @param {{label: string, type?: "text"|"number"|"boolean"|"array"}} field - The field descriptor: its prompt label and how to parse the answer (defaults to "text")
  * @param {*} current - The field's current value, shown in the prompt message
  * @param {*} defaultValue - The field's canonical default (from defaultcfg.json), shown in the prompt message
- * @returns {Promise<*|undefined>}
+ * @returns {Promise<*|undefined>} The parsed new value, or undefined to leave the field unchanged
  */
 export async function promptField(ns, field, current, defaultValue) {
     const type = field.type ?? "text";
+    // Arrays print as "a, b, c" rather than the raw JS array form
     const currentDisplay = Array.isArray(current) ? current.join(", ") : current;
     const defaultDisplay = Array.isArray(defaultValue) ? defaultValue.join(", ") : defaultValue;
     const message = `${field.label}\nCurrent: ${currentDisplay} | Default: ${defaultDisplay}`;
 
+    // Booleans get the real Yes/No dialog and resolve straight to a boolean,
+    // so there's nothing left to parse - return early.
     if (type === "boolean") {
         return await ns.prompt(message, { type: "boolean" });
     }
 
     const input = await ns.prompt(message, { type: "text" });
+    // "" = submitted blank, false = cancelled the dialog. Both mean "no change".
     if (input === "" || input === false) return undefined;
 
+    // Everything past here is a string from the text box - coerce it per type
     switch (type) {
         case "number": {
             const value = Number(input);
@@ -238,24 +301,39 @@ export async function promptField(ns, field, current, defaultValue) {
             return value;
         }
         case "array":
+            // "a, b , ,c" -> ["a","b","c"]: split on commas, trim whitespace,
+            // then drop empties so a trailing comma doesn't add a blank entry
             return input.split(",").map(s => s.trim()).filter(s => s.length > 0);
         default:
+            // "text" - hand the raw string back untouched
             return input;
     }
 }
 
 /**
- * Ensures the requested script is running on the target cloud server.
+ * Ensure the requested script is running on the target server, launching it if
+ * it isn't. Used by the watcher loops so a script that died (or was never
+ * started) gets picked back up on the next pass.
+ *
+ * The script is identified by name + host + its single argument, which is the
+ * host itself - see the exec below for why that arg convention is mandatory.
+ *
+ * NOTE: the `pid` parameter is not implemented yet. Passing anything other than
+ * null falls through to an empty default case and returns undefined without
+ * checking or launching anything.
  * @param {NS} ns - The Netscript API object
  * @param {string} script - The script name to ensure is running
  * @param {string} host - The target server hostname
- * @param {number|null} [pid=null] - If provided, checks by PID instead of script name
- * @returns {boolean} Whether the script was executed by ensureRunning
+ * @param {number|null} [pid=null] - Placeholder for a future check-by-PID mode; currently a no-op branch
+ * @returns {boolean|undefined} True if this call launched the script, false if it was already running, undefined if a non-null pid was passed
  */
 export function ensureRunning(ns, script, host, pid = null) {
     let ran;
     switch (pid) {
         case null:
+            // Third arg is the script's arg[0]. ns.isRunning matches on args
+            // exactly, so this only finds the process if it was launched with
+            // the same single host argument the exec below uses.
             if (!ns.isRunning(script, host, host)) {
                 // Specific behaviour for cloudpush.js as it does not transfer itself.
                 // all other scripts will be scp pushed by the cloudpush script.
@@ -278,9 +356,7 @@ export function ensureRunning(ns, script, host, pid = null) {
 
         default:
             // placeholder to add alt behaviour pid check code
-            //
-            //
-            //
+            // Currently does nothing - `ran` stays undefined and is returned as-is.
             break;
     }
     return ran;
@@ -288,9 +364,19 @@ export function ensureRunning(ns, script, host, pid = null) {
 
 // Computes rooted servers and caches result to /data/rooted.json
 /**
- * Computes the hostnames of all servers we have root access on (excluding home),
- * combining scanned network servers and purchased cloud servers, and writes
- * the result to /data/rooted.json for other scripts to read without recomputing.
+ * Compute the hostnames of every server we have root access on, combining the
+ * scanned network with our purchased cloud servers, and cache the result to
+ * /data/rooted.json so consumers (the scheduler, deployers) can read the list
+ * instead of recomputing this merge.
+ *
+ * Called by refresh.js each cycle after scanNetwork/scanCloud, so the cache
+ * tracks the live scan cadence.
+ *
+ * The `!purchasedByPlayer` filter is what stops clouds being counted twice:
+ * they appear in networks.json as owned servers *and* as keys in clouds.json,
+ * so they're excluded from the scan half and added back from the clouds half.
+ * NOTE: home is in networks.json with hasAdminRights true and purchasedByPlayer
+ * false, so home ends up in this list too.
  * @param {NS} ns - The Netscript API object
  * @returns {string[]} Array of rooted server hostnames
  */
@@ -298,10 +384,12 @@ export function getRootedServers(ns) {
     const networks = JSON.parse(ns.read("/data/networks.json"));
     const clouds = JSON.parse(ns.read("/data/clouds.json"));
 
+    // Rooted servers from the network scan, minus anything we bought ourselves
     const rootedFromScan = networks
         .filter((server) => server.hasAdminRights && !server.purchasedByPlayer)
         .map((server) => server.hostname);
 
+    // clouds.json is keyed by hostname, so its keys are the cloud server names
     const rooted = [...rootedFromScan, ...Object.keys(clouds)];
     ns.write("/data/rooted.json", JSON.stringify(rooted), "w");
     return rooted;

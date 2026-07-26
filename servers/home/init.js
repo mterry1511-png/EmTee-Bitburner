@@ -4,7 +4,28 @@ import { autoNuke } from "./lib/util.js";
 import { jsonEdit } from "./lib/util.js";
 
 /**
- * Initialises the automation environment by scanning and auto-nuking the network.
+ * Bootstraps the automation environment after an augmentation reset.
+ *
+ * POST-AUG-RESET DETECTION - the whole body of this script is gated on it:
+ * `ns.getResetInfo().lastAugReset` is a timestamp the game updates every time the player
+ * installs augmentations. `cfg.json` stores the last value init.js saw. If the two differ,
+ * this is the first init.js run since a reset and the full bootstrap runs; if they match,
+ * init.js does nothing at all. That makes init.js safe to re-run at any time.
+ *
+ * Bootstrap order, and why:
+ *   1. Reset cfg.json to defaults (`/cfg/cfgall.js "default"`) - a reset wipes progress, so
+ *      the old tuned config no longer matches the player's (now tiny) capabilities.
+ *   2. RE-READ cfg.json from disk. The in-memory `cfg` captured at the top of main() is now
+ *      stale, because cfgall.js rewrote the file in a separate process.
+ *   3. Boot animation, then scan the network and cloud inventory.
+ *   4. autoNuke every scanned server (root access is also wiped by a reset), then re-scan so
+ *      networks.json reflects the newly-gained root.
+ *   5. Restart daemon.js and print the "what to do next" summary.
+ *
+ * PID-POLLING WAIT: `ns.run()` returns a PID synchronously and does NOT block, so the code
+ * must poll `while (ns.isRunning(pid)) await ns.sleep(200)` to wait for cfgall.js to finish.
+ * Without that wait, step 2 would read cfg.json before cfgall.js had written it.
+ *
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
  */

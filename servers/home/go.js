@@ -1,147 +1,77 @@
-import { jsonEdit } from "./lib/util.js";
-import { killAll } from "./killall.js";                 // keep!
-import { ensureRunning } from "./lib/util.js";
+import { killScriptsOnClouds } from "./lib/remotekill.js";
 
 /**
- * Entry point for the next automation step after initialisation. 
- * WARNING: when this updates the *.json, this will be desynced with the VS code *.json as this is a one way operation only.
- * run after init.js!
+ * Task launcher with integer dispatch.
+ * Usage: go [task_number]
+ *
  * @param {NS} ns - The Netscript API object
- * @returns {Promise<void>}
  */
+
+function printUsage(ns, tasks) {
+    ns.tprint("=== Task Launcher ===\n");
+    for (const [key, task] of Object.entries(tasks)) {
+        ns.tprint(`[${key}] ${task.name}`);
+        ns.tprint(`    ${task.description}\n`);
+    }
+}
+
 export async function main(ns) {
-    const step = Number(ns.args[0]); // define run step- i.e. 1
+    const arg = String(ns.args[0] ?? "").toLowerCase();
 
-    ns.run("refresh.js");
-
-    // Set  cfgs
-    let changes;
-    switch (step) {
-        case 1:
-            changes = {
-                "targetRequirements.minDispatchServers": 1,
-                "targetRequirements.maxDispatchServers": 6,
-                "purchaseConfig.maxPercSpend": 99,
-                "purchaseConfig.minCloudRam": 2,
-                "purchaseConfig.targetCloudServs": 1,
-                // "securityThresh": 3,
-                // "moneyThresh": 0.85,
-                // "targetHackFraction": 0.15
+    const tasks = {
+        0: {
+            name: "Kill all buyrep and hackexp on clouds",
+            description: "Terminate buyrep.js and hackexp.js processes on all cloud servers",
+            run: async () => {
+                const scripts = ["buyrep.js", "hackexp.js"];
+                const killCount = await killScriptsOnClouds(ns, scripts);
+                ns.tprint(`Killed ${killCount} process(es) on cloud servers.`);
             }
-            break;
+        },
+        1: {
+            name: "Start buyrep on all clouds",
+            description: "Launch buyrep.js on each owned cloud server",
+            run: async () => {
+                const clouds = JSON.parse(ns.read("/data/clouds.json"));
+                const cloudNames = Object.keys(clouds);
 
-        case 2:
-            changes = {
-                "targetRequirements.minDispatchServers": 1,
-                "targetRequirements.maxDispatchServers": 10,
-                "purchaseConfig.maxPercSpend": 99,
-                "purchaseConfig.minCloudRam": 8,
-                "purchaseConfig.targetCloudServs": 8,
-                // "securityThresh": 3,
-                // "moneyThresh": 0.85,
-                // "targetHackFraction": 0.15
+                if (cloudNames.length === 0) {
+                    ns.tprint("No cloud servers available.");
+                    return;
+                }
+
+                for (const cloudName of cloudNames) {
+                    ns.exec("buyrep.js", "home", 1, cloudName);
+                }
+                ns.tprint(`buyrep.js started on ${cloudNames.length} cloud server(s).`);
             }
-            break;
+        },
+        2: {
+            name: "Start hackexp on all clouds",
+            description: "Launch hackexp.js on each owned cloud server",
+            run: async () => {
+                const clouds = JSON.parse(ns.read("/data/clouds.json"));
+                const cloudNames = Object.keys(clouds);
 
-        case 3:
-            changes = {
-                "targetRequirements.minDispatchServers": 1,
-                "targetRequirements.maxDispatchServers": 25,
-                "purchaseConfig.maxPercSpend": 80,
-                "purchaseConfig.minCloudRam": 128,
-                "purchaseConfig.targetCloudServs": 25,
-                // "securityThresh": 3,
-                // "moneyThresh": 0.85,
-                // "targetHackFraction": 0.15
+                if (cloudNames.length === 0) {
+                    ns.tprint("No cloud servers available.");
+                    return;
+                }
+
+                for (const cloudName of cloudNames) {
+                    ns.exec("hackexp.js", cloudName, 1);
+                }
+                ns.tprint(`hackexp.js started on ${cloudNames.length} cloud server(s).`);
             }
-            break;
-
-        case 4:
-            changes = {
-                "targetRequirements.minDispatchServers": 1,
-                "targetRequirements.maxDispatchServers": 100,
-                "purchaseConfig.maxPercSpend": 60,
-                "purchaseConfig.minCloudRam": 8192,
-                "purchaseConfig.targetCloudServs": 25,
-                // "securityThresh": 5,
-                // "moneyThresh": 0.95,
-                // "targetHackFraction": 0.35
-            }
-            break;
-
-        case 5:
-            changes = {
-                "targetRequirements.minDispatchServers": 1,
-                "targetRequirements.maxDispatchServers": 150,
-                "purchaseConfig.maxPercSpend": 60,
-                "purchaseConfig.minCloudRam": 524288,
-                "purchaseConfig.targetCloudServs": 25,
-                // "securityThresh": 5,
-                // "moneyThresh": 0.95,
-                // "targetHackFraction": 0.35
-            }
-            break;
-
-        case 6:
-            changes = {
-                "targetRequirements.minDispatchServers": 1,
-                "targetRequirements.maxDispatchServers": 150,
-                "purchaseConfig.maxPercSpend": 60,
-                "purchaseConfig.minCloudRam": 1048576,
-                "purchaseConfig.targetCloudServs": 25,
-                // "securityThresh": 5,
-                // "moneyThresh": 0.95,
-                // "targetHackFraction": 0.35
-            }
-            break;
-
-        default:
-            ns.tprint(`ERROR: Unknown step: ${step}`);
-            return;
+        },
+    };
+ 
+    // Show usage if no arg or invalid task
+    if (arg === "" || !tasks[arg]) {
+        printUsage(ns, tasks);
+        return;
     }
 
-    // apply cfg changes
-    for (const [key, value] of Object.entries(changes)) {
-        jsonEdit(ns, key, value);
-    }
-
-    // load config
-    const cfg = JSON.parse(ns.read("/data/cfg.json"));
-
-
-    if (ensureRunning(ns, "daemon.js", "home")) {
-        ns.tprint("cfg updated - starting daemon.js (8s) - Sit tight!");
-        await ns.sleep(8100);                                 // long ass wait to allow daemon.js to finish buying and upgrading servers
-    }
-
-    else {
-        ns.tprint("cfg updated - daemon.js detected as running");
-    }
-
-    // redefined throughout to be up to date.
-    let clouds = JSON.parse(ns.read("/data/clouds.json"));    // load clouds.json
-    let cloudNames = Object.keys(clouds);                     // fills array with cloud names
-
-    // iterate buyrep.js on all but one cloud servers - leaving one free for now
-    if (cloudNames.length > 0) {
-        for (let i = 1; i < cloudNames.length; i++) {
-            ensureRunning(ns, "buyrep.js", cloudNames[i]);
-        }
-    }
-
-    // dispatch to home.js or to cloud depending on cfg. fill remaining server with buyrep if dispatching to home.
-    if (cfg.deployToHome === true) {
-        ns.exec("dispatch.js", "home", 1, "home");
-        if (cloudNames.length > 0) {
-            ensureRunning(ns, "buyrep.js", cloudNames[0]);
-            ns.tprint("dispatch.js started on home. buyrep.js started on all cloud servers.")
-        }
-    }
-    else {
-        ns.exec("dispatch.js", "home", 1, cloudNames[0]);
-        ns.tprint("dispatch.js and buyrep.js started on cloud servers.")
-
-    }
-
-    await ns.sleep(1000);
+    // Execute task
+    await tasks[arg].run();
 }

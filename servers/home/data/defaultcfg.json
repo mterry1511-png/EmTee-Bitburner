@@ -3,7 +3,7 @@
   "cloudPushSleep": 2000,
   "refreshInterval": 5,
   "autoStocks": false,
-  "autobuyClouds": false,  
+  "autobuyClouds": false,
   "autobuyHacknet": false,
   "hacknetBuySleep": 10,
   "hacknetPercSpend": 75,
@@ -25,6 +25,13 @@
   "watchedScripts": [
     "cloudpush.js"
   ],
+  "gangCfg": {
+    "enableBuyWeapons": true,
+    "enableBuyArmour": true,
+    "enableBuyVehicles": true,
+    "enableBuyRootkits": true,
+    "englableBuyAugs": true
+  },
   "purchaseConfig": {
     "maxPercSpend": 50,
     "minCloudRam": 8,

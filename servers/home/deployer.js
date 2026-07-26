@@ -2,6 +2,11 @@ import * as targeting from "./lib/targeting.js";
 import { getAvailableThreads } from "./lib/util.js";
 import * as format from "./lib/format.js";
 
+// Script paths for the three HGW phases. These strings are used for THREE separate
+// purposes and must stay identical across all of them:
+//   1. the `phase` value (so `phase` IS the script path - no lookup table needed to exec it),
+//   2. the keys of TIME_FN and `counts` below,
+//   3. the exact path handed to ns.exec / ns.getScriptRam.
 const WEAKEN = "./lib/hgw/weaken.js";
 const GROW = "./lib/hgw/grow.js";
 const HACK = "./lib/hgw/hack.js";
@@ -14,6 +19,21 @@ const TIME_FN = {
     [HACK]: (ns, target) => ns.getHackTime(target),
 };
 
+/**
+ * Terminal/exec entry point for a single deployer instance.
+ * Parses args, positions its tail window, then hands off to start() which never returns.
+ * One deployer owns exactly ONE target; dispatch.js launches one instance per ranked target.
+ *
+ * The 1000ms startup sleep is deliberate: dispatch.js staggers its ns.exec calls so
+ * deployers don't all wake and start reserving RAM in the same instant (the RAM-spike
+ * problem the staggering commit addressed). This sleep is the deployer's half of that
+ * handshake - it gives the launching dispatch.js time to finish and release its own RAM.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} [ns.args[0]="home"] - scriptHost: the server the HGW threads run ON
+ * @param {string} [ns.args[1]="best"] - targetMode: a targeting.knownModes value, or a raw hostname
+ * @param {string|null} [ns.args[2]=null] - target: explicit hostname, bypassing targetMode resolution
+ * @returns {Promise<void>} Never resolves in practice - start() loops forever
+ */
 export async function main(ns) {
     const scriptHost = ns.args[0] ?? "home";
     const targetMode = ns.args[1] ?? "best";
@@ -31,7 +51,38 @@ export async function main(ns) {
     await start(ns, scriptHost, targetMode, target);
 }
 
+/**
+ * Runs the sequential HGW control loop against a single target, forever.
+ *
+ * This is a *sequential* (non-batched) HGW driver, not a batcher: exactly one of
+ * WEAKEN/GROW/HACK is in flight at a time, and the phase is not re-assessed until the
+ * current phase's running threads and backlog both reach zero. That ordering guarantee
+ * is the whole point - it costs idle time between phases but means effects always land
+ * in the intended order. The planned batcher (see CLAUDE.md) is the eventual replacement.
+ *
+ * Each tick (1s) the loop:
+ *   1. reaps finished child PIDs and sums the threads still running,
+ *   2. reads live security/money once (shared by every step below),
+ *   3. picks a phase if - and only if - the previous phase is fully clear,
+ *   4. recomputes the GROW/HACK backlog from that live state,
+ *   5. launches as much of the backlog as free RAM currently allows.
+ *
+ * NOTE: step 5 is a check-RAM-then-exec race - getAvailableThreads() reads free RAM and
+ * ns.exec() consumes it a moment later, with nothing stopping another deployer from taking
+ * that RAM in between. Every deployer instance races every other one. Eliminating this is
+ * the reason the centralised scheduler exists (see CLAUDE.md "Scheduler").
+ *
+ * @param {NS} ns - The Netscript API object
+ * @param {string} scriptHost - The server the weaken/grow/hack threads are exec'd on
+ * @param {string} targetMode - A targeting.knownModes value ("best"/"ranked"/"easy"/"hacklvl"), or a raw hostname used verbatim
+ * @param {string|null} [target=null] - Explicit target hostname; when null, resolved from targetMode
+ * @returns {Promise<void>} Never resolves - loops until the script is killed
+ */
 export async function start(ns, scriptHost, targetMode, target = null) {
+    // Resolve which server we're attacking. An explicit `target` arg always wins; otherwise
+    // targetMode is interpreted as a targeting mode if it's a known one, else taken literally
+    // as a hostname. "ranked" returns an ARRAY of hostnames, so collapse it to the top entry -
+    // a deployer only ever drives one target.
     if (target === null) {
         if (targeting.knownModes.includes(targetMode)) {
             target = targeting.getTarget(ns, targetMode);
@@ -43,14 +94,21 @@ export async function start(ns, scriptHost, targetMode, target = null) {
         }
     }
 
+    // Config is read ONCE here, not per tick - so cfg.json edits made while a deployer is
+    // running won't be picked up until it's restarted (dispatch.js kills and relaunches).
     const cfg = JSON.parse(ns.read("/data/cfg.json"));
     const maxMoney = ns.getServerMaxMoney(target);
+    // cfg.moneyThresh is a FRACTION of max money (e.g. 0.75), not an absolute amount.
     const moneyThresh = cfg.moneyThresh * maxMoney;
 
+    // cfg.securityThresh is an allowance ABOVE the server's floor, not an absolute level -
+    // so the real threshold has to be computed per target from its own minimum difficulty.
     const minDifficulty = targeting.getMinDifficulty(ns, target);
-    if (minDifficulty === null) return;
+    if (minDifficulty === null) return;     // target absent from networks.json - nothing to do
     const securityThreshActual = minDifficulty + cfg.securityThresh;
 
+    // Security reduction from one weaken thread. Flat and target-independent, which is why
+    // the WEAKEN backlog can be computed once at phase entry (unlike grow/hack - see below).
     const weakenPerThread = ns.weakenAnalyze(1);
 
     ns.disableLog("ALL");
@@ -68,8 +126,12 @@ export async function start(ns, scriptHost, targetMode, target = null) {
     // This guarantees HGW effects land in the order intended, at the cost of
     // some idle time between phases (acceptable for this basic version).
     let phase = null;
+    // Lifetime launch tally per phase, reported by the atExit handler below.
     const counts = { [WEAKEN]: 0, [GROW]: 0, [HACK]: 0 };
 
+    // Kill this deployer's own children when it dies, so a restart doesn't leave orphaned
+    // hgw threads squatting on scriptHost's RAM. Only the CURRENTLY ACTIVE phase's PIDs are
+    // in childArr, which is safe here precisely because phases never overlap.
     ns.atExit(() => {
         for (const child of childArr) ns.kill(child.pid);
         ns.print(" ");
@@ -87,6 +149,8 @@ export async function start(ns, scriptHost, targetMode, target = null) {
     let waitTickCount = 0;          // ticks without launching; print "Waiting" only after threshold
 
     while (true) {
+        // Reap: drop any child whose PID has exited. This is the ONLY thing that lowers
+        // runningThreads, and therefore the only thing that lets a phase ever go clear.
         childArr = childArr.filter(child => ns.isRunning(child.pid));
         const runningThreads = childArr.reduce((s, c) => s + c.threads, 0);
 
@@ -144,10 +208,21 @@ export async function start(ns, scriptHost, targetMode, target = null) {
         }
 
         // --- Drain backlog for the active phase only, using whatever RAM is free right now ---
+        // getAvailableThreads() already subtracts cfg.leaveRamFree, so the headroom the user
+        // reserved for manual work is respected without doing the arithmetic here.
+        //
+        // RACE: the free-RAM reading below and the ns.exec that spends it are not atomic.
+        // Any other deployer (or anything else on scriptHost) can take that RAM in between,
+        // in which case ns.exec returns 0 and the launch is silently skipped for this tick.
+        // The pid !== 0 guard is what stops a failed launch being recorded as a real one.
+        //
+        // Note that `queue` is not decremented here. For GROW/HACK that is intentional - the
+        // recompute block above rebuilds it from live state every tick. For WEAKEN it is not
+        // (see findings), since WEAKEN's queue is only ever set at phase entry.
         let launchedThisTick = false;
         if (queue > 0) {
             const available = getAvailableThreads(ns, scriptHost, phase);
-            if (available >= 1) { // still no room, stays queued, retried next tick
+            if (available >= 1) { // else: no room at all, backlog stays put and is retried next tick
                 const threads = Math.min(available, queue);
                 const pid = ns.exec(phase, scriptHost, threads, target);
                 if (pid !== 0) {

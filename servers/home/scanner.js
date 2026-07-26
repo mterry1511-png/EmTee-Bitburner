@@ -1,5 +1,14 @@
 /**
- * Entry point that scans the network and/or cloud servers based on mode.
+ * Terminal entry point. Runs a full network scan and/or a cloud-only scan
+ * depending on the mode argument, refreshing the two data files that the rest
+ * of the automation reads from:
+ *   - /data/networks.json  (written by scanNetwork)
+ *   - /data/clouds.json    (written by scanCloud, and it reads networks.json,
+ *                           so a cloud-only scan relies on networks.json
+ *                           already being reasonably fresh)
+ *
+ * Mode handling: no argument or anything other than 1 runs both scans; 1 runs
+ * the cloud scan only.
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
  */
@@ -22,7 +31,11 @@ export async function main(ns) {
 
 // printusage function
 /**
- * Prints scanner usage instructions.
+ * Prints scanner usage instructions to the terminal.
+ * Called from inside scanNetwork/scanCloud when "help" appears in ns.args,
+ * not from main - so it only fires when the script is launched from the
+ * terminal with the help arg, never when the scan functions are imported and
+ * called by another script.
  * @param {NS} ns - The Netscript API object
  * @returns {void}
  */
@@ -36,9 +49,24 @@ function printusage(ns) {
 
 // Scans the network and writes all server information to networks.json
 /**
- * Scans the reachable network and stores server metadata to networks.json.
+ * Walks the whole server network breadth-first from "home" and writes every
+ * server it reaches to /data/networks.json, overwriting the file completely.
+ *
+ * This is the WRITE side of the networks.json contract. Read-side consumers
+ * include refresh.js (feeds hostnames to autoNuke), scanCloud below,
+ * getRootedServers in lib/util.js, and lib/targeting.js. Because the file is
+ * overwritten wholesale, anything a consumer added to it is lost on the next
+ * scan - networks.json is a cache, never a store.
+ *
+ * Shape written: a JSON array of raw Bitburner `Server` objects exactly as
+ * returned by ns.getServer(), one per reachable server including "home" and
+ * the player's own purchased cloud servers. Every property of the Server
+ * interface is present; the ones the rest of this codebase actually reads are
+ * `hostname`, `hasAdminRights`, `purchasedByPlayer`, `maxRam`, `cpuCores`,
+ * `moneyMax`, `minDifficulty`, `hackDifficulty`, `serverGrowth`,
+ * `requiredHackingSkill`, `numOpenPortsRequired` and `backdoorInstalled`.
  * @param {NS} ns - The Netscript API object
- * @param {boolean} [quiet=false] - Whether to suppress output messages
+ * @param {boolean} [quiet=false] - Whether to suppress output messages. Also forced on by a "-q" terminal arg
  * @returns {Promise<void>}
  */
 export async function scanNetwork(ns, quiet = false) {
@@ -65,11 +93,16 @@ export async function scanNetwork(ns, quiet = false) {
     while (queue.length > 0) {
         // Pulls the next server FIFO from the queue and starts working on it as currentServer
         const currentServer = queue.shift();
-        // Next loop if we've already visited this server
+        // Guard against a bad shift() result. This does NOT skip already-visited
+        // servers - it only skips an undefined entry, which can't happen while
+        // queue.length > 0. Deduplication is handled by the visited Set below.
         if (currentServer === undefined) {
             continue;
         }
-        // Mark currentServer as visited
+        // Mark currentServer as visited.
+        // NOTE: this happens on dequeue, not on enqueue, so the same hostname can
+        // sit in the queue more than once if several servers link to it. See the
+        // findings notes - this is why allServers can contain duplicates.
         visited.add(currentServer);
         // Add currentServer to allServers array
         allServers.push(currentServer);
@@ -82,7 +115,11 @@ export async function scanNetwork(ns, quiet = false) {
             }
         }
     }
-    // Populate networks.json. Trim this to only include properties we care about. Check scanner.readme.txt for which properties are included.
+    // Populate networks.json.
+    // NOTE: this currently stores the FULL ns.getServer() object per server - it is
+    // not trimmed. The commented-out block below is the old trimmed version, kept as
+    // a reference for if the file ever needs slimming down again.
+    // (The old scanner-readme.txt that used to list the trimmed properties is gone.)
     let networks = [];
     // for each server, append a new object to networks
     for (const server of allServers) {
@@ -132,9 +169,27 @@ export async function scanNetwork(ns, quiet = false) {
 
 // Scans all cloud servers and writes cloud information to clouds.json
 /**
- * Collects purchased cloud servers and writes them to clouds.json.
+ * Rebuilds /data/clouds.json - the registry of the player's purchased cloud
+ * servers - from the current contents of /data/networks.json, overwriting the
+ * file completely.
+ *
+ * IMPORTANT: this reads networks.json rather than scanning the network itself,
+ * so it is only as fresh as the last scanNetwork call. Callers that need
+ * accurate cloud data run scanNetwork immediately before this (see refresh.js,
+ * nukeclouds.js and upgradeclouds.js).
+ *
+ * Shape written: a JSON object keyed by cloud server hostname, each value being
+ * `{ maxRam: number }` - e.g. `{ "cloud-0": { "maxRam": 64 }, "gamma": { "maxRam": 1024 } }`.
+ * "home" is excluded even though it is also flagged purchasedByPlayer. An empty
+ * object `{}` means the player owns no cloud servers.
+ *
+ * Read-side consumers: daemon.js, killall.js, upgradeclouds.js, renamecloud.js,
+ * nukeclouds.js, buycloud.js, dispatch.js, go.js, clouds.js and getRootedServers
+ * in lib/util.js. buycloud.js and renamecloud.js also WRITE to this file
+ * directly rather than re-scanning, so their edits survive only until the next
+ * scanCloud call.
  * @param {NS} ns - The Netscript API object
- * @param {boolean} [quiet=false] - Whether to suppress output messages
+ * @param {boolean} [quiet=false] - Whether to suppress output messages. Also forced on by a "-q" terminal arg
  * @returns {Promise<void>}
  */
 export async function scanCloud(ns, quiet = false) {

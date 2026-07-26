@@ -100,3 +100,5 @@ Replaces `dispatch.js` entirely. A centralized daemon that owns all `ns.exec` ca
 - Add home RAM upgrade support to cloud watcher once Singularity (SF4) is unlocked.
 
 Planned work on the cfg.json restructure lives in [servers/home/cfg/CLAUDE.md](servers/home/cfg/CLAUDE.md); the stockmarket.js logic outline lives in [servers/home/stocks/CLAUDE.md](servers/home/stocks/CLAUDE.md).
+
+[docs/review-findings.md](docs/review-findings.md) holds the code issues turned up by the project-wide JSDoc/comment pass — bugs, shadowed variables, dead code, DRY violations and leftover build artifacts that were logged but deliberately *not* fixed, since that pass was comments-only. **This is a transient work queue, not project state** — it's a deliberate exception to the "notes belong in CLAUDE.md, not `docs/`" rule above, made because 45 files' worth of findings would bury this file. Work through it, then delete it; anything worth keeping gets promoted into CLAUDE.md proper rather than living on in `docs/`.

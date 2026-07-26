@@ -14,20 +14,22 @@ export const knownModes = ["best", "ranked", "easy", "hacklvl"];
 // Normal usage: Call getTarget directly. See targetingREADME.txt for full usage.
 /**
  * Selects a target based on the requested targeting mode.
+ * Usage: run targeting.js [mode]
+ *   mode: "best" (default), "ranked", "easy", or "hacklvl"
  * @param {NS} ns - The Netscript API object
- * @returns {Promise<string>}
+ * @returns {string|string[]} Single target for "best"/"easy"/"hacklvl" modes, array of targets for "ranked"
  */
 export async function main(ns) {
     const mode = ns.args[0];
     const targetHostname = getTarget(ns, mode);
-    return (targetHostname);
+    return targetHostname;
 }
 
 /**
  * Chooses a target hostname or ranked list according to the requested mode.
  * @param {NS} ns - The Netscript API object
- * @param {TargetMode|string|undefined} mode - The targeting mode or raw hostname
- * @returns {string|array} The target hostname or array of hostnames based on mode
+ * @param {TargetMode|undefined} mode - Targeting mode: "best", "ranked", "easy", "hacklvl", or undefined (defaults to "best")
+ * @returns {string|string[]} Single hostname for "best"/"easy"/"hacklvl", array of hostnames for "ranked"
  */
 export function getTarget(ns, mode) {
     // Select mode based on argument passed
@@ -39,8 +41,8 @@ export function getTarget(ns, mode) {
             const target = targets[0];
             // print function
             printTarget(ns, target.hostname, mode, target.moneyPerSec);
-            // returns hostname given from mode specific function 
-            ns.print(target. hostname);
+            // returns hostname given from mode specific function
+            validateTargetRooted(ns, target.hostname);
             return target.hostname;
         }
 
@@ -59,7 +61,8 @@ export function getTarget(ns, mode) {
             const target = targets[0];
             // print function
             printTarget(ns, target.hostname, mode, target.moneyPerSec);
-            // returns hostname given from mode specific function 
+            // returns hostname given from mode specific function
+            validateTargetRooted(ns, target.hostname);
             return target.hostname;
         }
 
@@ -67,22 +70,42 @@ export function getTarget(ns, mode) {
             const target = "n00dles"
             // print function
             printTarget(ns, target, mode);
-            // returns hostname given from mode specific function 
+            // Validate that n00dles is rooted before returning
+            validateTargetRooted(ns, target);
+            // returns hostname given from mode specific function
             return target;
         }
 
         default: {
-            ns.print("Targeting mode not specified. Using default mode: ranked");
-            ns.tprint("Targeting mode not specified. Using default mode: ranked");
+            ns.print("Targeting mode not specified. Using default mode: best");
+            ns.tprint("Targeting mode not specified. Using default mode: best");
 
             // Call mode specific function
-            // Shares getBestMoney with "best" case but returns an array of hostnames
+            // Shares getBestMoney with "best" case but returns only a single server hostname
             const targets = getBestMoney(ns);
-            //print function
-            ns.print("Hackable servers ranked, n=" + targets.length);
-            return targets.map(t => t.hostname);
+            const target = targets[0];
+            // print function
+            printTarget(ns, target.hostname, "best", target.moneyPerSec);
+            // returns hostname given from mode specific function
+            validateTargetRooted(ns, target.hostname);
+            return target.hostname;
         }
     }
+}
+
+/**
+ * Validates that a target server has been rooted (admin rights obtained).
+ * @param {NS} ns - The Netscript API object
+ * @param {string} hostname - The hostname of the target server
+ * @returns {boolean} True if rooted, false otherwise
+ */
+function validateTargetRooted(ns, hostname) {
+    const isRooted = ns.hasRootAccess(hostname);
+    if (!isRooted) {
+        ns.print(`WARNING: Target ${hostname} does not have root access!`);
+        ns.tprint(`WARNING: Target ${hostname} does not have root access!`);
+    }
+    return isRooted;
 }
 
 // prints to terminal and log depending on target and mode
@@ -101,7 +124,7 @@ function printTarget(ns, target, mode, moneyPerSec) {
         case "easy": { ns.print(target + " was selected because it's easy as fuck to hack."); return; }
     }
     // Print result to terminal and the log
-    const print = ("\nTarget: " + target + "\n" + format.money(moneyPerSec) + " expected per minute, per thread.\n");
+    const print = ("\nTarget: " + target + "\n");
     ns.tprint(print);
     ns.print(print);
 }
