@@ -149,3 +149,4 @@ build/
 
 .vscode/*
 !.vscode/launch.json
+.claude/worktrees/claude-md-refactor/
