@@ -149,4 +149,7 @@ build/
 
 .vscode/*
 !.vscode/launch.json
-.claude/worktrees/claude-md-refactor/
+# Claude Code scratch state (worktrees for background jobs, shell snapshots)
+.claude/worktrees/
+.claude/shell-snapshots/
+
