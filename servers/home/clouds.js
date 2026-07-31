@@ -18,5 +18,6 @@ export async function main(ns) {
     ns.ui.resizeTail(800,400);
 
     // print the parsed object - ns.print renders objects readably, no stringify needed
+    ns.clearLog();
     ns.print(clouds);
 }

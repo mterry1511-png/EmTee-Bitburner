@@ -20,5 +20,6 @@ export async function main(ns) {
 
     // Printed as an object, not a string - Bitburner pretty-prints objects passed
     // to ns.print, so the nesting stays readable without a manual JSON.stringify
+    ns.clearLog();
     ns.print(cfg);
 }

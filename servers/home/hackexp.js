@@ -34,14 +34,14 @@ export async function main(ns) {
     // based on money per second (respects config requirements like minMoney, minServerGrowth)
     if (target === "best") {
         target = getTarget(ns, "best");
-        ns.tprint(`Selected target: ${target}`);
+        ns.tprint("Executing hackexp on " + ns.getHostname() + " targeting " + target);
     }
 
-    // open tail by default
-    ns.ui.openTail();
-    ns.ui.setTailMinimized(false); // true: min, false: max
-    ns.ui.moveTail(1650, 500);
-    ns.ui.resizeTail(250, 350);
+    // open tail by default - disabled
+    // ns.ui.openTail();
+    // ns.ui.setTailMinimized(false); // true: min, false: max
+    // ns.ui.moveTail(1650, 500);
+    // ns.ui.resizeTail(250, 350);
 
     ns.disableLog("disableLog");
     ns.disableLog("getServerMaxRam");
@@ -84,7 +84,7 @@ export async function main(ns) {
         // (The 5.1GB figure in the message is a hardcoded approximation, not derived from
         // scriptRam above, so it can drift from the real requirement. See findings.)
         if (threads < 1) {
-            ns.tprint("Insufficient ram on host. Requires minimum 5.1GB");
+            ns.tprint("Insufficient RAM on " + ns.getHostname() + ". Requires minimum 5.1GB");
             break;
         }
 

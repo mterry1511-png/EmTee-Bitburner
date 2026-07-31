@@ -63,6 +63,8 @@ export async function main(ns) {
                 // directly because hackexp.js has no such relay step.)
                 for (const cloudName of cloudNames) {
                     ns.exec("buyrep.js", "home", 1, cloudName);
+                    await ns.sleep(20);
+
                 }
                 ns.tprint(`buyrep.js started on ${cloudNames.length} cloud server(s).`);
             }
@@ -83,12 +85,44 @@ export async function main(ns) {
                 // independently resolves its own "best" target via targeting.getTarget.
                 for (const cloudName of cloudNames) {
                     ns.exec("hackexp.js", cloudName, 1);
+                    await ns.sleep(20);
                 }
                 ns.tprint(`hackexp.js started on ${cloudNames.length} cloud server(s).`);
             }
         },
+        3: {
+            name: "Start buyrep and hackexp 50:50 on clouds",
+            description: "Split clouds: first half runs buyrep.js, second half runs hackexp.js",
+            run: async () => {
+                const clouds = JSON.parse(ns.read("/data/clouds.json"));
+                const cloudNames = Object.keys(clouds);
+
+                if (cloudNames.length === 0) {
+                    ns.tprint("No cloud servers available.");
+                    return;
+                }
+
+                const splitPoint = Math.ceil(cloudNames.length / 2);
+                const buyrepClouds = cloudNames.slice(0, splitPoint);
+                const hackexpClouds = cloudNames.slice(splitPoint);
+
+                // Launch buyrep on first half
+                for (const cloudName of buyrepClouds) {
+                    ns.exec("buyrep.js", "home", 1, cloudName);
+                    await ns.sleep(20);
+                }
+
+                // Launch hackexp on second half
+                for (const cloudName of hackexpClouds) {
+                    ns.exec("hackexp.js", cloudName, 1);
+                    await ns.sleep(20);
+                }
+
+                ns.tprint(`buyrep.js started on ${buyrepClouds.length} cloud(s), hackexp.js started on ${hackexpClouds.length} cloud(s).`);
+            }
+        },
     };
- 
+
     // Show usage if no arg or invalid task. Note task "0" is safe here: the guard tests
     // `arg === ""` on the string, not the truthiness of the number, so "0" still dispatches.
     if (arg === "" || !tasks[arg]) {

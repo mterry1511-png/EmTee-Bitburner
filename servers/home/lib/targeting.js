@@ -171,11 +171,7 @@ function printTarget(ns, target, mode, moneyPerSec) {
         case "best": { ns.print(target + " was selected based on the highest money per second at threshold."); break; }
         case "hacklvl": { ns.print(target + " was selected based on the highest hack level possible."); break; }
         case "easy": { ns.print(target + " was selected because it's easy as fuck to hack."); return; }
-    }
-    // Print result to terminal and the log
-    const print = ("\nTarget: " + target + "\n");
-    ns.tprint(print);
-    ns.print(print);
+    } 
 }
 
 
