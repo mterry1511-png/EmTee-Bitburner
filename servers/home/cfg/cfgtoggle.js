@@ -45,9 +45,8 @@ export async function main(ns) {
         const current = getByPath(cfg, field.key);
         const defaultValue = getByPath(defaults, field.key);
 
-        // undefined means "leave unchanged". Worth knowing: for boolean fields
-        // promptField returns the dialog result directly, so a dismissed dialog reads
-        // as false rather than undefined and the switch gets written off
+        // undefined means "leave unchanged" - including a dismissed boolean dialog,
+        // which promptField now distinguishes from a genuine "No" via a select prompt.
         const value = await promptField(ns, field, current, defaultValue);
         if (value === undefined) continue;
 

@@ -280,10 +280,16 @@ export async function promptField(ns, field, current, defaultValue) {
     const defaultDisplay = Array.isArray(defaultValue) ? defaultValue.join(", ") : defaultValue;
     const message = `${field.label}\nCurrent: ${currentDisplay} | Default: ${defaultDisplay}`;
 
-    // Booleans get the real Yes/No dialog and resolve straight to a boolean,
-    // so there's nothing left to parse - return early.
+    // Booleans can't use the plain "boolean" dialog: ns.prompt resolves a cancelled
+    // boolean prompt to false, which is indistinguishable from a genuine "No" click -
+    // that's what made backing out of cfgtoggle partway turn every remaining switch off.
+    // A "select" dialog gives cancel its own distinct default ("") separate from either
+    // real answer, so skipping is actually possible.
     if (type === "boolean") {
-        return await ns.prompt(message, { type: "boolean" });
+        const choice = await ns.prompt(message, { type: "select", choices: ["Yes", "No", "Skip (leave unchanged)"] });
+        if (choice === "Yes") return true;
+        if (choice === "No") return false;
+        return undefined;
     }
 
     const input = await ns.prompt(message, { type: "text" });

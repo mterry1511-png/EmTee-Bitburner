@@ -99,18 +99,16 @@ export async function scanNetwork(ns, quiet = false) {
         if (currentServer === undefined) {
             continue;
         }
-        // Mark currentServer as visited.
-        // NOTE: this happens on dequeue, not on enqueue, so the same hostname can
-        // sit in the queue more than once if several servers link to it. See the
-        // findings notes - this is why allServers can contain duplicates.
-        visited.add(currentServer);
         // Add currentServer to allServers array
         allServers.push(currentServer);
         // Scan the neighbors of currentServer
         const neighbors = ns.scan(currentServer);
-        // For each of those neighbors, if we haven't visited them yet, add them to the queue to visit later
+        // For each of those neighbors, if we haven't visited them yet, mark them visited
+        // and add them to the queue to visit later. Marking on enqueue (not dequeue) is
+        // what stops the same hostname being queued twice when multiple servers link to it.
         for (const neighbor of neighbors) {
             if (!visited.has(neighbor)) {
+                visited.add(neighbor);
                 queue.push(neighbor);
             }
         }

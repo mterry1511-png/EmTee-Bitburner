@@ -9,7 +9,7 @@ All game code lives under `servers/home/`. `docs/memory.md` used to hold this fi
 - Build: esbuild + `bb-external-editor` (shyguy1412 template) for bidirectional Remote File API sync over WebSocket, port 12525.
 
 ## Current State
-- Post-aug-reset detection in `init.js`: compares `ns.getResetInfo().lastAugReset` against a stored value in `cfg.json`; uses PID-polling (`while (ns.isRunning(pid)) await ns.sleep(200)`) since `ns.run()` doesn't block.
+- `init.js` resets `cfg.json` to defaults (`/cfg/cfgall.js "default"`) unconditionally, every run. The rest of the bootstrap (boot animation, network/cloud scan, autoNuke, daemon restart) stays gated behind post-aug-reset detection: compares `ns.getResetInfo().lastAugReset` against a stored value in `cfg.json`, written back via `jsonEdit` once the bootstrap runs so it doesn't re-fire on the next call. Uses PID-polling (`while (ns.isRunning(pid)) await ns.sleep(200)`) since `ns.run()` doesn't block.
 - `buyhacknetnodes.js` has a working `buyCheapest(ns)`.
 - HGW automation confirmed working with two config profiles (RAM-limited steps 1–3, RAM-abundant steps 4–6), using named profile objects + spread syntax in `go.js` to avoid duplication.
 - **Resolved:** `cfgall.js` is updated manually (code changes) whenever new keys are added to `cfg.json` — no auto-detecting/prompting for new keys at runtime. Bypassing the interactive flow via a `"default"` arg is still NOT wanted.
@@ -74,10 +74,10 @@ Planned work on the cfg.json restructure lives in [servers/home/cfg/CLAUDE.md](s
 [docs/review-findings.md](docs/review-findings.md) holds the code issues turned up by the project-wide JSDoc/comment pass — bugs, shadowed variables, dead code, DRY violations and leftover build artifacts that were logged but deliberately *not* fixed, since that pass was comments-only. **This is a transient work queue, not project state** — it's a deliberate exception to the "notes belong in CLAUDE.md, not `docs/`" rule above, made because 45 files' worth of findings would bury this file. Work through it, then delete it; anything worth keeping gets promoted into CLAUDE.md proper rather than living on in `docs/`.
 
 **Priority actions from the JSDoc pass (2026-07-26):**
-1. **Fix four confirmed bugs** (load-bearing, not cosmetic):
-   - `deployer.js:~150` — WEAKEN's `queue` never decrements; deployer stuck in WEAKEN phase forever, earning nothing and burning RAM on no-op weakens. Likely root cause of RAM pressure that motivated staggering fix.
-   - `init.js:~68` — `lastAugReset` is never written to disk (only read); every `init.js` run silently resets `cfg.json` to defaults, discarding all config tuning.
-   - `scanner.js:80-90` — BFS marks `visited` on dequeue, not enqueue; `networks.json` contains duplicates that feed into `rooted.json`, causing scheduler to double-count host RAM.
-   - `lib/util.js` — `promptField` cannot express "skip" for boolean fields; backing out of `cfgtoggle` partway turns every remaining switch off.
+1. ~~Fix four confirmed bugs~~ **Done (2026-08-01):**
+   - `deployer.js` — WEAKEN now gets its own live recompute branch (symmetric with GROW/HACK), so its `queue` actually reaches zero instead of leaving the deployer stuck weakening forever and burning RAM on no-op weakens.
+   - `init.js` — `jsonEdit(ns, "lastAugReset", ...)` is now called once the post-reset bootstrap runs, so it doesn't re-fire every launch. Separately, `cfg.json` is now reset to defaults on *every* `init.js` run regardless of aug-reset status (a deliberate behavior change, not part of the original bug fix) — see Current State above.
+   - `scanner.js` — BFS now marks `visited` on enqueue, not dequeue, so `networks.json`/`rooted.json` can no longer contain duplicate hostnames.
+   - `lib/util.js` — `promptField` now renders boolean fields as a 3-choice select ("Yes"/"No"/"Skip") instead of a plain boolean dialog, since a cancelled boolean prompt resolved to `false` indistinguishably from a real "No" — that's what made backing out of `cfgtoggle` partway turn every remaining switch off.
 2. **Verify and act on ~80 other findings** — marked REPORTED (not independently confirmed). High-value ones: DRY in cfg editors, pervasive async-without-await in cloud batch, check-RAM-then-exec race (scheduler evidence).
 3. **Update line 14** — `go.js` no longer holds the two HGW config profiles; it's now a numbered task launcher, and thresholds moved to `cfg.json` consumed by `deployer.js`.

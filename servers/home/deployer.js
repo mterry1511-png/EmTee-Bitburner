@@ -107,19 +107,18 @@ export async function start(ns, scriptHost, targetMode, target = null) {
     if (minDifficulty === null) return;     // target absent from networks.json - nothing to do
     const securityThreshActual = minDifficulty + cfg.securityThresh;
 
-    // Security reduction from one weaken thread. Flat and target-independent, which is why
-    // the WEAKEN backlog can be computed once at phase entry (unlike grow/hack - see below).
+    // Security reduction from one weaken thread. Flat and target-independent, but the WEAKEN
+    // backlog is still recomputed every tick (like grow/hack - see below), so it self-corrects
+    // if something else raises security mid-phase instead of trusting a phase-entry estimate.
     const weakenPerThread = ns.weakenAnalyze(1);
 
     ns.disableLog("ALL");
 
     let childArr = [];   // {pid, script, threads} for the CURRENTLY ACTIVE phase only
     // Backlog of threads owed to the target but not yet launched due to RAM scarcity.
-    // For GROW/HACK this is recomputed every tick from live server state (see below) rather
-    // than fixed at phase entry, since grow/hack both move the server state that determines
-    // how many threads are still actually needed as their own batches land mid-phase.
-    // WEAKEN's queue is NOT recomputed - its per-thread effect is flat and state-independent,
-    // so the phase-entry estimate stays accurate for the whole phase.
+    // Recomputed every tick from live server state for all three phases (see below) rather
+    // than fixed at phase entry, since each phase's own batches move the state its thread-count
+    // formula depends on as they land mid-phase.
     let queue = 0;
     // Only one of WEAKEN/GROW/HACK may be in flight at a time - phase is not
     // reassessed until the current phase's running threads and queue both hit zero.
@@ -168,16 +167,15 @@ export async function start(ns, scriptHost, targetMode, target = null) {
             let statusLine;
             if (currentSec > securityThreshActual) {
                 phase = WEAKEN;
-                const securityToReduce = currentSec - securityThreshActual;
-                queue = Math.ceil(securityToReduce / weakenPerThread);
+                // NOTE: queue is deliberately NOT set here - like GROW/HACK below, the recompute
+                // block derives it from live state later in this same tick, which is what lets
+                // WEAKEN's queue reach zero once security actually hits the floor.
                 statusLine = `\nSecurity too high - ${currentSec.toFixed(2)} (current) > ${securityThreshActual.toFixed(2)} (threshold)`;
             } else if (currentMoney < moneyThresh) {
                 phase = GROW;
                 // NOTE: queue is deliberately NOT set here. The recompute block below runs
                 // later in this same tick and derives it from live state, so setting it here
-                // would be immediately overwritten. Same for the HACK branch.
-                // (Contrast the WEAKEN branch above, which is the only phase whose queue is
-                // set at phase entry - and never recomputed or decremented afterwards.)
+                // would be immediately overwritten. Same for the WEAKEN and HACK branches.
                 statusLine = "\nMoney too low - " + format.money(currentMoney) + " (current) < " + format.money(moneyThresh) + " (threshold)";
             } else {
                 phase = HACK;
@@ -190,15 +188,20 @@ export async function start(ns, scriptHost, targetMode, target = null) {
             }
         }
 
-        // --- Recompute GROW/HACK's remaining thread requirement from live state, every tick ---
-        // Grow and hack both move the server state their own thread-count formula depends on
-        // (grow raises money toward maxMoney, hack lowers it; both raise security as a side
-        // effect which feeds back into hack's steal-fraction-per-thread). A queue number fixed
-        // at phase entry goes stale as batches land mid-phase, causing GROW to overshoot
-        // (dispatching threads after the goal is already met) and HACK to slightly undershoot.
+        // --- Recompute the active phase's remaining thread requirement from live state, every tick ---
+        // All three phases move server state their own thread-count formula depends on
+        // (weaken/grow lower security and raise money respectively, hack lowers money and
+        // raises security as a side effect, which feeds back into hack's steal-fraction-per-
+        // thread). A queue number fixed at phase entry goes stale as batches land mid-phase -
+        // causing WEAKEN to never clear once its phase-entry estimate is met, GROW to overshoot
+        // (dispatching threads after the goal is already met), and HACK to slightly undershoot.
         // Recomputing "total still needed" from current state each tick and subtracting what's
         // already running keeps the backlog honest against reality instead of a stale estimate.
-        if (phase === GROW) {
+        if (phase === WEAKEN) {
+            const securityToReduce = Math.max(0, currentSec - securityThreshActual);
+            const stillNeeded = Math.ceil(securityToReduce / weakenPerThread);
+            queue = Math.max(0, stillNeeded - runningThreads);
+        } else if (phase === GROW) {
             const safeMoney = Math.max(currentMoney, 1);
             const growMultiplier = (maxMoney * cfg.moneyThresh) / safeMoney;
             const stillNeeded = Math.ceil(ns.growthAnalyze(target, growMultiplier));
@@ -218,9 +221,10 @@ export async function start(ns, scriptHost, targetMode, target = null) {
         // in which case ns.exec returns 0 and the launch is silently skipped for this tick.
         // The pid !== 0 guard is what stops a failed launch being recorded as a real one.
         //
-        // Note that `queue` is not decremented here. For GROW/HACK that is intentional - the
-        // recompute block above rebuilds it from live state every tick. For WEAKEN it is not
-        // (see findings), since WEAKEN's queue is only ever set at phase entry.
+        // `queue` IS decremented here by the threads just launched. Not load-bearing for
+        // correctness - the recompute block above rebuilds `queue` from live state every tick
+        // regardless - but it keeps the "still queued" figure in the log line below accurate
+        // for the remainder of THIS tick, rather than showing the pre-launch count.
         let launchedThisTick = false;
         if (queue > 0) {
             const available = getAvailableThreads(ns, scriptHost, phase);
@@ -230,6 +234,7 @@ export async function start(ns, scriptHost, targetMode, target = null) {
                 if (pid !== 0) {
                     childArr.push({ pid, script: phase, threads });
                     counts[phase]++;
+                    queue -= threads;
                     launchedThisTick = true;
                     waitTickCount = 0;
                     const returnsIn = format.duration(TIME_FN[phase](ns, target));

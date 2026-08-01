@@ -376,27 +376,13 @@ uses a third form, `"data/..."`). No try/catch on the read.
 > hackexp). The HGW thresholds now live in `cfg.json` (`moneyThresh`, `securityThresh`,
 > `targetHackFraction`) and are consumed by `deployer.js`. Fix `CLAUDE.md` when convenient.
 
-### `deployer.js:~150` — WEAKEN's `queue` is never decremented, so the weaken phase can never end
+### ~~`deployer.js:~150` — WEAKEN's `queue` is never decremented, so the weaken phase can never end~~ RESOLVED
 
-**Most severe finding of the whole pass.** `queue` is set once on entry to WEAKEN and **nothing
-ever reduces it** — the drain block launches `Math.min(available, queue)` threads without
-subtracting, and the recompute block only rewrites `queue` for GROW/HACK. Agent confirmed by
-tracing every write to `queue`.
-
-Two consequences:
-1. `phaseClear` requires `queue === 0`, so once a deployer enters WEAKEN **it never re-evaluates
-   its phase again** — never grows, never hacks, earns nothing for that target for the rest of
-   its life.
-2. It keeps launching weaken threads every tick forever, long after security hits the floor —
-   permanently consuming all of `scriptHost`'s free RAM on no-op weakens.
-
-Likely a major contributor to the RAM pressure that motivated the launch-staggering work in
-commit `8dc18ad`.
-
-*Fix:* give WEAKEN a recompute branch symmetric with GROW/HACK:
-`queue = Math.max(0, Math.ceil((currentSec - securityThreshActual) / weakenPerThread) - runningThreads)`.
-Preferred over a simple `queue -= threads` because it self-corrects if another script raises
-security mid-phase, and makes all three phases obey one rule.
+Fixed: WEAKEN now has a recompute branch symmetric with GROW/HACK
+(`queue = Math.max(0, Math.ceil((currentSec - securityThreshActual) / weakenPerThread) - runningThreads)`),
+run every tick alongside the other two. All three phases now obey the same rule, and it
+self-corrects if something else raises security mid-phase instead of trusting a stale
+phase-entry estimate.
 
 ### `init.js:~68` — `cfg.lastAugReset` is NEVER written, so the bootstrap fires on every run
 

@@ -1,11 +1,11 @@
 Bitburner Automation — Action Checklist
 (Generated from CLAUDE.md — kept in sync by a background agent)
 
-PRIORITY — Confirmed Bugs (from 2026-07-26 JSDoc pass, docs/review-findings.md)
-[ ] deployer.js:~150 — WEAKEN's `queue` never decrements; deployer gets stuck in WEAKEN phase forever, earning nothing, burning RAM on no-op weakens.
-[ ] init.js:~68 — `lastAugReset` is never written to disk (only read); every init.js run silently resets cfg.json to defaults.
-[ ] scanner.js:80-90 — BFS marks `visited` on dequeue, not enqueue; networks.json contains duplicates, causing scheduler to double-count host RAM.
-[ ] lib/util.js — `promptField` cannot express "skip" for boolean fields; backing out of cfgtoggle partway turns every remaining switch off.
+PRIORITY — Confirmed Bugs (from 2026-07-26 JSDoc pass, docs/review-findings.md) — DONE (2026-08-01)
+[x] deployer.js:~150 — WEAKEN's `queue` never decrements; deployer gets stuck in WEAKEN phase forever, earning nothing, burning RAM on no-op weakens.
+[x] init.js:~68 — `lastAugReset` is never written to disk (only read); every init.js run silently resets cfg.json to defaults.
+[x] scanner.js:80-90 — BFS marks `visited` on dequeue, not enqueue; networks.json contains duplicates, causing scheduler to double-count host RAM.
+[x] lib/util.js — `promptField` cannot express "skip" for boolean fields; backing out of cfgtoggle partway turns every remaining switch off.
 
 FOLLOW-UP — docs/review-findings.md
 [ ] Verify and act on ~80 other findings marked REPORTED (not yet independently confirmed).

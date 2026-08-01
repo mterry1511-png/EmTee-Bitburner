@@ -4,20 +4,27 @@ import { autoNuke } from "./lib/util.js";
 import { jsonEdit } from "./lib/util.js";
 
 /**
- * Bootstraps the automation environment after an augmentation reset.
+ * Resets cfg.json to defaults on every run, and additionally bootstraps the automation
+ * environment the first time it runs after an augmentation reset.
  *
- * POST-AUG-RESET DETECTION - the whole body of this script is gated on it:
+ * cfg.json is reset unconditionally, every run - see the always-reset block below.
+ *
+ * POST-AUG-RESET DETECTION - everything past the always-reset block is gated on it:
  * `ns.getResetInfo().lastAugReset` is a timestamp the game updates every time the player
- * installs augmentations. `cfg.json` stores the last value init.js saw. If the two differ,
- * this is the first init.js run since a reset and the full bootstrap runs; if they match,
- * init.js does nothing at all. That makes init.js safe to re-run at any time.
+ * installs augmentations. `cfg.json` stores the last value init.js saw (a key that survives
+ * the always-reset above, since it's absent from defaultcfg.json by design). If the two
+ * differ, this is the first init.js run since a reset and the full bootstrap runs; if they
+ * match, init.js stops after the cfg reset. That makes init.js safe to re-run at any time.
  *
  * Bootstrap order, and why:
- *   1. Reset cfg.json to defaults (`/cfg/cfgall.js "default"`) - a reset wipes progress, so
- *      the old tuned config no longer matches the player's (now tiny) capabilities.
+ *   1. Reset cfg.json to defaults (`/cfg/cfgall.js "default"`) - runs every time, since a
+ *      reset wipes progress and the old tuned config no longer matches capabilities, and
+ *      re-running init.js between resets is also a convenient way to force cfg back to
+ *      defaults.
  *   2. RE-READ cfg.json from disk. The in-memory `cfg` captured at the top of main() is now
  *      stale, because cfgall.js rewrote the file in a separate process.
- *   3. Boot animation, then scan the network and cloud inventory.
+ *   3. (First run since a reset only) Boot animation, then scan the network and cloud
+ *      inventory.
  *   4. autoNuke every scanned server (root access is also wiped by a reset), then re-scan so
  *      networks.json reflects the newly-gained root.
  *   5. Restart daemon.js and print the "what to do next" summary.
@@ -46,35 +53,30 @@ export async function main(ns) {
 
     // Post-aug-reset check: compare the game's live lastAugReset timestamp against the one
     // cfg.json remembers from the previous init.js run. Different => we've reset since then.
+    // Computed before the always-reset below runs, since that reset doesn't touch lastAugReset.
     const resetInfo = ns.getResetInfo();
     const isFirstRunSinceReset = cfg.lastAugReset !== resetInfo.lastAugReset;
-    // and if it is - run cfgall first before any of this
-    if (isFirstRunSinceReset) {
 
-        // Reset config to defaults. ns.run() does NOT block - it hands back a PID immediately -
-        // so poll ns.isRunning() until cfgall.js exits before reading cfg.json back below.
-        const defaulterPid = ns.run("/cfg/cfgall.js", 1, "default");
-        while (ns.isRunning(defaulterPid)) {
-            await ns.sleep(200);
-        }
+    // Reset cfg.json to defaults every run, regardless of aug-reset status. ns.run() does NOT
+    // block - it hands back a PID immediately - so poll ns.isRunning() until cfgall.js exits
+    // before reading cfg.json back below.
+    const defaulterPid = ns.run("/cfg/cfgall.js", 1, "default");
+    while (ns.isRunning(defaulterPid)) {
+        await ns.sleep(200);
+    }
+    // Re-read from disk: cfgall.js rewrote cfg.json in another process, so the `cfg` object
+    // read at the top of main() is stale.
+    cfg = JSON.parse(ns.read("/data/cfg.json"));
+
+    // and if it is a first run since reset - run the rest of the bootstrap
+    if (isFirstRunSinceReset) {
         ns.tprint("New augmentation reset detected — default cfg loaded.");
 
-        // Superseded draft of the block above (interactive cfgall.js instead of "default").
-        // IMPORTANT: this dead block contains the ONLY jsonEdit that ever writes
-        // cfg.lastAugReset. With it commented out, cfg.lastAugReset is never updated, so
-        // isFirstRunSinceReset above stays true forever and every init.js run redoes the
-        // full bootstrap (including wiping cfg.json back to defaults). See findings.
-        //     //option to launch cfgall.js  0 waits for the config to close before continuing
-        //     const pid = ns.run("cfg/cfgall.js", 1);
-        //     while (ns.isRunning(pid)) {
-        //         await ns.sleep(200);
-        //     }
-        //     jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
-        // }
+        // Record the reset we just handled, so isFirstRunSinceReset is false on the next
+        // init.js run until another aug reset happens. Without this, lastAugReset was never
+        // written and every run redid the full bootstrap, wiping cfg.json back to defaults.
+        jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
 
-        // Re-read from disk: cfgall.js rewrote cfg.json in another process, so the `cfg`
-        // object read at the top of main() is stale.
-        cfg = JSON.parse(ns.read("/data/cfg.json"));
         // Placeholder for a future collected-results string; printResults() ignores it today.
         const results = "";
 
