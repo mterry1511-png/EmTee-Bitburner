@@ -3,8 +3,6 @@ import { scanNetwork } from "./scanner.js";
 import { scanCloud } from "./scanner.js";
 import { autoNuke, getRootedServers } from "./lib/util.js";
 
-
-
 // IDEA - later this can be turned into a controller which is timed, compares besttarget array and restarts deployer if the top cfg.maxDispatchServers entries changes 
 
 /**
