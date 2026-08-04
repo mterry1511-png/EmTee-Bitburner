@@ -450,20 +450,17 @@ imported for this and is otherwise unused.
   having run. A cloud purchased since the last push gets `pid === 0` and is silently skipped.
 - **`~10` `let clouds` / `let cloudNames`** never reassigned → should be `const`.
 
-### `buyrep.js`
+### ~~`buyrep.js`~~ RESOLVED (2026-08-04)
 
-- **`~40` `ns.args[0] ?? ns.getServer()` yields a Server *object*, not a hostname.** With no arg,
-  `host` is an object → `host == "home"` never true, `currentServer.hostname == host` never true,
-  `Object.hasOwn(clouds, host)` stringifies to `"[object Object]"` and never matches. Falls through
-  to "ERROR: Invalid host target", which is why it looks like working validation.
-  *Fix:* `ns.getHostname()`.
-- **`~90` `await ns.exec(...)` — `ns.exec` is synchronous.** Returns a pid, not a Promise. The
-  `await` does nothing but makes the call read as though it waits for the launched script.
-- **`~83` 100ms retry busy-loop when RAM is unavailable.** Success path tops up every 10s; the
-  no-RAM path retries at 10 Hz with an `ns.print` each iteration — and a full host is the *expected*
-  steady state for a filler. Also prints *after* sleeping, so log ordering is off.
-- **`~72` unused `const cfg`**; **`~35,43`** `==` instead of `===`; **`:8`** `printusage` vs the
-  camelCase `printUsage` used in `dispatch.js`/`go.js`/`hackexp.js`.
+- `ns.args[0] ?? ns.getServer()` → `ns.getHostname()`; fixes the object-vs-hostname bug that made
+  the no-arg path (and every `==` comparison against `host`) silently dead.
+- Dropped the no-op `await` on `ns.exec` and now captures the pid, pushing it into a `childPids`
+  array that an `ns.atExit` handler kills on script teardown — was previously an unchecked return
+  value leaking orphaned `share.js` threads on restart.
+- No-RAM retry now polls at the same 10s cadence as the success path instead of busy-looping at
+  10 Hz, and the `ns.print` moved before the sleep so log ordering matches actual event order.
+- Removed unused `const cfg`; `==` → `===`; `printusage` → `printUsage` (matches
+  `dispatch.js`/`go.js`/`hackexp.js` convention).
 
 ### `hackexp.js`
 
@@ -481,10 +478,10 @@ imported for this and is otherwise unused.
 - **The check-RAM-then-exec race appears 5× in this batch alone:** `deployer.js` (drain),
   `dispatch.js` (launch loop), `dispatchall.js` (fleet launch), `buyrep.js` (share top-up),
   `hackexp.js` (thread fill). Concrete justification for the scheduler owning every `ns.exec`.
-- **Unchecked `ns.exec` return values:** `dispatch.js`, `dispatchall.js`, `buyrep.js`, `go.js`
-  (tasks 1 and 2) all discard the pid. `deployer.js` is the only file here that checks it. Worth a
-  house rule independent of the scheduler — a silent zero is indistinguishable from success in every
-  log line these scripts emit.
+- **Unchecked `ns.exec` return values:** `dispatch.js`, `dispatchall.js`, `go.js` (tasks 1 and 2)
+  still discard the pid. `deployer.js` and now `buyrep.js` check it. Worth a house rule independent
+  of the scheduler — a silent zero is indistinguishable from success in every log line these
+  scripts emit.
 
 ---
 

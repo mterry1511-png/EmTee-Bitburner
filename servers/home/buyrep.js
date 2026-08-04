@@ -5,7 +5,7 @@ import { getAvailableThreads } from "./lib/util.js";
  * @param {NS} ns - The Netscript API object
  * @returns {void}
  */
-function printusage(ns) {
+function printUsage(ns) {
     ns.tprint("Run from home server only");
     ns.tprint("Specify cloud server to run on - fills ram but observes freeRam parameter in cfg.json");
     ns.tprint("Example usage: 'run buyrep.js cloud-0'");
@@ -30,28 +30,27 @@ function printusage(ns) {
  * @returns {Promise<void>}
  */
 export async function main(ns) {
-    // printusage check 
+    // printUsage check
     const help = ns.args.includes("help");
     if (help) {
-        printusage(ns);
+        printUsage(ns);
         return;
     }
 
-    // Store host name. NOTE: the fallback yields a Server OBJECT, not a hostname string -
-    // so omitting arg[0] does not degrade gracefully to "current server". See findings.
-    const host = ns.args[0] ?? ns.getServer();
+    // Store host name, falling back to the hostname this copy is already running on.
+    const host = ns.args[0] ?? ns.getHostname();
 
-    // if host is home, return error
-    if (host == "home") {
-        ns.tprint("ERROR: buyrep must be ran on a cloud server\n");
-        printusage(ns);
-        return;
-    }
+    // // if host is home, return error
+    // if (host === "home") {
+    //     ns.tprint("ERROR: buyrep must be ran on a cloud server\n");
+    //     printUsage(ns);
+    //     return;
+    // }
 
     // Relay check: if we're ALREADY on the requested host, this is the second (relayed) copy,
     // so skip the exec and run the fill loop here. Otherwise fall through and relay below.
     const currentServer = ns.getServer();
-    if (currentServer.hostname == host) {
+    if (currentServer.hostname === host) {
         await buyrep(ns, host);
         return;
     }
@@ -66,7 +65,7 @@ export async function main(ns) {
 
     else {
         ns.tprint("ERROR: Invalid host target - terminated");
-        printusage(ns);
+        printUsage(ns);
         return;
     }
 }
@@ -88,11 +87,20 @@ export async function main(ns) {
  * @returns {Promise<void>} Never resolves - loops until the script is killed
  */
 async function buyrep(ns, host) {
-    // load config
-    const cfg = JSON.parse(ns.read("/data/cfg.json"));      // unused below - see findings
-
     // default for error catching later
     let threads = 1;
+
+    // Tracks every share.js batch launched so far, since this is a top-up loop - old batches
+    // may still be running when a new one launches, unlike hackexp.js's single-PID case.
+    let childPids = [];
+
+    // Kill every still-running share.js batch when buyrep is culled, so a restart doesn't
+    // leave orphaned share threads squatting on host's RAM.
+    ns.atExit(() => {
+        for (const pid of childPids) {
+            if (ns.isRunning(pid)) ns.kill(pid);
+        }
+    });
 
     while (true) {
         // threads to fill hostserver determined
@@ -100,18 +108,18 @@ async function buyrep(ns, host) {
 
         // debug ns.tprint("\nthreads: " + threads + "\nhost: " + host);
 
-        // No room right now - back off briefly and re-measure. The 100ms retry makes this a
-        // tight busy-loop compared to the 10s cadence of the success path.
+        // No room right now - back off briefly and re-measure. A full host is the expected
+        // steady state for a filler, so this polls slower than the 10s top-up cadence.
         if (threads < 1) {
-            await ns.sleep(100);
             ns.print("insufficient RAM to start share.js");
+            await ns.sleep(10000);
             continue;
         }
 
         // Launch the batch, then wait before topping up again.
-        // NOTE: ns.exec is synchronous and returns a PID, not a Promise - the `await` here
-        // does nothing. See findings.
-        await ns.exec("./lib/share.js", host, threads);
-        await ns.sleep(10000);
+        const pid = ns.exec("./lib/share.js", host, threads);
+        if (pid !== 0) childPids.push(pid);
+        childPids = childPids.filter(p => ns.isRunning(p));    // reap finished batches
+        await ns.sleep(10010);
     }
 }
