@@ -72,8 +72,15 @@ export async function main(ns) {
             continue;
         }
 
-        // execute buy - minBuy blocks until the 2GB cost is affordable
-        await minBuy(ns, randomName);
+        // execute buy - minBuy blocks until the 2GB cost is affordable, then returns null
+        // if the purchase itself failed (e.g. the max cloud server cap is already hit).
+        // That failure won't resolve by retrying, so stop this tick's buy pass rather than
+        // hot-looping purchaseServer calls that can only ever fail the same way.
+        const bought = await minBuy(ns, randomName);
+        if (bought === null) {
+            ns.print("\nStopping cloud purchase pass - see the error above.");
+            break;
+        }
         clouds = JSON.parse(ns.read("/data/clouds.json"));      // re-read after each buy - minBuy wrote to it
         cfg = JSON.parse(ns.read("/data/cfg.json"));            // re-read after each buy - picks up live config edits
         await ns.sleep(100);

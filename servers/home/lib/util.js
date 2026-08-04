@@ -231,6 +231,56 @@ export function jsonEdit(ns, key, value, filepath = "/data/cfg.json") {
 }
 
 /**
+ * Flattens a nested object into dot-notation key/value pairs matching jsonEdit's
+ * key format (e.g. "purchaseConfig.maxPercSpend"). Arrays are treated as leaf
+ * values, not recursed into - an array is a config value in its own right
+ * (e.g. cloudNamePresets), not a branch with numeric keys to walk.
+ * @param {object} obj - The object to flatten
+ * @param {string} [prefix=""] - The dot-notation prefix accumulated so far
+ * @returns {{key: string, value: *}[]} Flat list of dotted keys and their leaf values
+ */
+function flattenKeys(obj, prefix = "") {
+    const entries = [];
+    // for...in walks the object's keys (for...of would try to iterate values, which
+    // a plain object has no iterator for)
+    for (const key in obj) {
+        const value = obj[key];
+        // Top level keys have no prefix; anything deeper gets "parent.child"
+        const fullKey = prefix ? `${prefix}.${key}` : key;
+
+        // Plain object => a branch, so recurse and splice its results in.
+        // The null check is needed because typeof null === "object" in JS
+        if (value !== null && typeof value === "object" && !Array.isArray(value)) {
+            entries.push(...flattenKeys(value, fullKey));
+        } else {
+            // Leaf: a primitive or an array, recorded as-is
+            entries.push({ key: fullKey, value });
+        }
+    }
+    return entries;
+}
+
+/**
+ * Resets every key found in defaultcfg.json back to its canonical default in cfg.json.
+ * Full reset only, no per-key mode - writes every key defaultcfg.json has, so keys absent
+ * from it (e.g. lastAugReset, which is runtime state) are left untouched by construction.
+ * No confirmation prompt here - callers that need one (a user-triggered "reset everything"
+ * action) wrap this in confirmAction first; init.js's unconditional every-run reset calls
+ * it directly since prompting on every launch would defeat the point.
+ * @param {NS} ns - The Netscript API object
+ * @returns {void}
+ */
+export function resetCfgToDefaults(ns) {
+    const defaults = JSON.parse(ns.read("/data/defaultcfg.json"));
+
+    // jsonEdit only understands one dotted key at a time, so the nested defaults
+    // object gets flattened into a list of dotted key/value pairs first
+    for (const { key, value } of flattenKeys(defaults)) {
+        jsonEdit(ns, key, value);
+    }
+}
+
+/**
  * Read a nested value out of an object via a dotted key path.
  * The read-only counterpart to jsonEdit's path walking - used by the cfg/*.js
  * editors to pull a field's live value out of cfg.json and its canonical

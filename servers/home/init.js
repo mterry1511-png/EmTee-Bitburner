@@ -1,7 +1,7 @@
 // import functions required
 import { scanNetwork, scanCloud } from "./scanner.js";
 import { autoNuke } from "./lib/util.js";
-import { jsonEdit } from "./lib/util.js";
+import { jsonEdit, resetCfgToDefaults } from "./lib/util.js";
 
 /**
  * Resets cfg.json to defaults on every run, and additionally bootstraps the automation
@@ -17,21 +17,21 @@ import { jsonEdit } from "./lib/util.js";
  * match, init.js stops after the cfg reset. That makes init.js safe to re-run at any time.
  *
  * Bootstrap order, and why:
- *   1. Reset cfg.json to defaults (`/cfg/cfgall.js "default"`) - runs every time, since a
- *      reset wipes progress and the old tuned config no longer matches capabilities, and
- *      re-running init.js between resets is also a convenient way to force cfg back to
- *      defaults.
+ *   1. Reset cfg.json to defaults (`resetCfgToDefaults`, shared with `cfg/cfgdefaults.js`) -
+ *      runs every time, since a reset wipes progress and the old tuned config no longer
+ *      matches capabilities, and re-running init.js between resets is also a convenient way
+ *      to force cfg back to defaults. This writes every key found in defaultcfg.json,
+ *      including top-level booleans like autobuyClouds - NOT `/cfg/cfgall.js "default"`,
+ *      which only resets the curated subset of fields its interactive prompt flow covers
+ *      and silently leaves everything else (autobuyClouds, autobuyHacknet, watchedScripts,
+ *      deployToHome, gangCfg) at whatever a prior session last set it to.
  *   2. RE-READ cfg.json from disk. The in-memory `cfg` captured at the top of main() is now
- *      stale, because cfgall.js rewrote the file in a separate process.
+ *      stale, because resetCfgToDefaults rewrote the file.
  *   3. (First run since a reset only) Boot animation, then scan the network and cloud
  *      inventory.
  *   4. autoNuke every scanned server (root access is also wiped by a reset), then re-scan so
  *      networks.json reflects the newly-gained root.
  *   5. Restart daemon.js and print the "what to do next" summary.
- *
- * PID-POLLING WAIT: `ns.run()` returns a PID synchronously and does NOT block, so the code
- * must poll `while (ns.isRunning(pid)) await ns.sleep(200)` to wait for cfgall.js to finish.
- * Without that wait, step 2 would read cfg.json before cfgall.js had written it.
  *
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
@@ -57,15 +57,10 @@ export async function main(ns) {
     const resetInfo = ns.getResetInfo();
     const isFirstRunSinceReset = cfg.lastAugReset !== resetInfo.lastAugReset;
 
-    // Reset cfg.json to defaults every run, regardless of aug-reset status. ns.run() does NOT
-    // block - it hands back a PID immediately - so poll ns.isRunning() until cfgall.js exits
-    // before reading cfg.json back below.
-    const defaulterPid = ns.run("/cfg/cfgall.js", 1, "default");
-    while (ns.isRunning(defaulterPid)) {
-        await ns.sleep(200);
-    }
-    // Re-read from disk: cfgall.js rewrote cfg.json in another process, so the `cfg` object
-    // read at the top of main() is stale.
+    // Reset cfg.json to defaults every run, regardless of aug-reset status - every key
+    // defaultcfg.json has, not just the interactive-prompt subset (see doc comment above).
+    resetCfgToDefaults(ns);
+    // Re-read from disk: the `cfg` object read at the top of main() is now stale.
     cfg = JSON.parse(ns.read("/data/cfg.json"));
 
     // and if it is a first run since reset - run the rest of the bootstrap
