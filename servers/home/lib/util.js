@@ -268,7 +268,7 @@ export async function confirmAction(ns, message) {
  * "leave this field alone" - cancelled, submitted empty, or an unparseable
  * number - so callers can skip the write rather than clobbering a good value.
  * @param {NS} ns - The Netscript API object
- * @param {{label: string, type?: "text"|"number"|"boolean"|"array"}} field - The field descriptor: its prompt label and how to parse the answer (defaults to "text")
+ * @param {{label: string, type?: "text"|"number"|"boolean"|"array"|"select", choices?: number[]}} field - The field descriptor: its prompt label, how to parse the answer (defaults to "text"), and for type "select" the offered choices
  * @param {*} current - The field's current value, shown in the prompt message
  * @param {*} defaultValue - The field's canonical default (from defaultcfg.json), shown in the prompt message
  * @returns {Promise<*|undefined>} The parsed new value, or undefined to leave the field unchanged
@@ -290,6 +290,15 @@ export async function promptField(ns, field, current, defaultValue) {
         if (choice === "Yes") return true;
         if (choice === "No") return false;
         return undefined;
+    }
+
+    // A closed set of numeric choices (e.g. RAM, which must be a power of 2) -
+    // cancel resolves to "" or false, neither of which collides with an actual
+    // choice, so no explicit skip option is needed like the boolean case above.
+    if (type === "select") {
+        const choice = await ns.prompt(message, { type: "select", choices: field.choices });
+        if (choice === "" || choice === false) return undefined;
+        return Number(choice);
     }
 
     const input = await ns.prompt(message, { type: "text" });

@@ -14,16 +14,24 @@ export async function main(ns) {
     const cfg = JSON.parse(ns.read("/data/cfg.json"));
     const defaults = JSON.parse(ns.read("/data/defaultcfg.json"));
 
+    // Cloud server RAM must be a power of 2, so offer every valid value up to
+    // the game's current cap as a dropdown instead of a free-typed number field.
+    const ramChoices = [];
+    for (let ram = 2; ram <= ns.cloud.getRamLimit(); ram *= 2) {
+        ramChoices.push(ram);
+    }
+
     /**
      * The cloud-purchase settings offered by this editor, in prompt order.
-     * @type {{key: string, label: string, type: "text"|"number"|"boolean"|"array"}[]}
+     * @type {{key: string, label: string, type: "text"|"number"|"boolean"|"array"|"select", choices?: number[]}[]}
      * @property {string} key - Dotted path into cfg.json / defaultcfg.json, and the key passed to jsonEdit.
      * @property {string} label - Human-readable question shown in the ns.prompt dialog.
      * @property {string} type - Drives both the dialog UI and the parsing done by promptField.
+     * @property {number[]} [choices] - For type "select", the offered dropdown values.
      */
     const fields = [
         { key: "purchaseConfig.maxPercSpend", label: "Max % Spend", type: "number" },
-        { key: "purchaseConfig.minCloudRam", label: "Min Cloud RAM", type: "number" },
+        { key: "purchaseConfig.minCloudRam", label: "Min Cloud RAM", type: "select", choices: ramChoices },
         { key: "purchaseConfig.targetCloudServs", label: "Target Cloud Servers", type: "number" },
         // The only boolean here, so the only one promptField renders as a Yes/No dialog
         { key: "autobuyClouds", label: "Autobuy cloud servers?", type: "boolean" },
