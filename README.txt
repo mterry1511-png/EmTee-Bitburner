@@ -1,6 +1,8 @@
 EmTee's Bitburner v1.x
 Trimmed up bugs and ensureRunning().
 
+(Test branch: this line added to try out the merge/prune workflow. Safe to merge or discard.)
+
 Next steps:
 Seems like an issue with minbuy call - crashed on first  - seems to still be a problem?
 
