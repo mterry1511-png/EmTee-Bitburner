@@ -2,8 +2,8 @@ import { jsonEdit, promptField, getByPath } from "../lib/util.js";
 
 /**
  * Prompts for the cloud-server purchasing settings and writes them to /data/cfg.json.
- * Covers the purchaseConfig.* budget/sizing keys plus the top-level autobuyClouds
- * switch that decides whether the cloud watcher acts on them at all.
+ * Covers only the purchaseConfig.* budget/sizing keys - the autobuyClouds on/off
+ * switch lives in cfgtoggle.js, the sole home for boolean toggles.
  * Current values come from the live cfg.json; the displayed defaults are looked up
  * from /data/defaultcfg.json by each field's dotted key, never hardcoded here.
  * Unlike cfgall/cfghacknet/cfgtoggle, this editor has no "default" argument shortcut.
@@ -33,8 +33,6 @@ export async function main(ns) {
         { key: "purchaseConfig.maxPercSpend", label: "Max % Spend", type: "number" },
         { key: "purchaseConfig.minCloudRam", label: "Min Cloud RAM", type: "select", choices: ramChoices },
         { key: "purchaseConfig.targetCloudServs", label: "Target Cloud Servers", type: "number" },
-        // The only boolean here, so the only one promptField renders as a Yes/No dialog
-        { key: "autobuyClouds", label: "Autobuy cloud servers?", type: "boolean" },
     ];
 
     for (const field of fields) {

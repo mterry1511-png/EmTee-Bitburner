@@ -23,9 +23,7 @@ export async function main(ns) {
      * @property {string} type - Always "boolean" here, which is what gets promptField to use the Yes/No UI.
      */
     const fields = [
-        // Overlaps with cfgcloud.js, which offers this same switch alongside the purchase settings
         { key: "autobuyClouds", label: "Autobuy cloud servers?", type: "boolean" },
-        // Overlaps with cfghacknet.js in the same way
         { key: "autobuyHacknet", label: "Autobuy hacknet?", type: "boolean" },
         { key: "autoStocks", label: "Run Stock Market Tool?", type: "boolean" },
         { key: "deployToHome", label: "Deploy to home? Bool", type: "boolean" }
