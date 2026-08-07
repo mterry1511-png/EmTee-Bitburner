@@ -7,26 +7,24 @@ import { getAvailableThreads } from "./lib/util.js";
  */
 function printUsage(ns) {
     ns.tprint("Run from home server only");
-    ns.tprint("Specify cloud server to run on - fills ram but observes freeRam parameter in cfg.json");
-    ns.tprint("Example usage: 'run buyrep.js cloud-0'");
+    ns.tprint("Specify server to run on (cloud or home) - fills ram but observes freeRam parameter in cfg.json");
+    ns.tprint("Example usage: 'run buyrep.js cloud-0' or 'run buyrep.js home'");
     ns.tprint("Requires host to be specified")
     return;
 }
- 
+
 /**
- * Fills a cloud server's RAM with `ns.share()` threads to boost faction reputation gain.
+ * Fills a server's RAM (cloud or home) with `ns.share()` threads to boost faction reputation gain.
  *
  * Self-relaying entry point - the same script plays two roles depending on where it is running:
- *   - Launched on home with a cloud hostname: validates the host against clouds.json and
- *     ns.exec's a fresh copy of ITSELF onto that cloud, passing the hostname through, then exits.
+ *   - Launched on home with a target hostname (cloud or "home"): validates the host against
+ *     clouds.json and ns.exec's a fresh copy of ITSELF onto that host, passing the hostname
+ *     through, then exits.
  *   - Already running ON the named host (hostname matches arg[0]): skips the relay and drops
  *     straight into the buyrep() fill loop.
  * That is why go.js task 1 launches this on "home" rather than on the cloud directly.
- *
- * Refuses to run against home: share threads are meant to occupy otherwise-idle cloud RAM,
- * not compete with home's hacking work.
  * @param {NS} ns - The Netscript API object
- * @param {string} ns.args[0] - Target cloud hostname (required); "help" prints usage instead
+ * @param {string} ns.args[0] - Target hostname (required), cloud or "home"; "help" prints usage instead
  * @returns {Promise<void>}
  */
 export async function main(ns) {
@@ -39,13 +37,6 @@ export async function main(ns) {
 
     // Store host name, falling back to the hostname this copy is already running on.
     const host = ns.args[0] ?? ns.getHostname();
-
-    // // if host is home, return error
-    // if (host === "home") {
-    //     ns.tprint("ERROR: buyrep must be ran on a cloud server\n");
-    //     printUsage(ns);
-    //     return;
-    // }
 
     // Relay check: if we're ALREADY on the requested host, this is the second (relayed) copy,
     // so skip the exec and run the fill loop here. Otherwise fall through and relay below.
