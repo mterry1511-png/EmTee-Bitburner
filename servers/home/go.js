@@ -91,7 +91,7 @@ export async function main(ns) {
             }
         },
         3: {
-            name: "Start buyrep and hackexp 50:50 on clouds",
+            name: "Start buyrep and hackexp 10:90 on clouds",
             description: "Split clouds: first half runs buyrep.js, second half runs hackexp.js",
             run: async () => {
                 const clouds = JSON.parse(ns.read("/data/clouds.json"));
@@ -102,7 +102,7 @@ export async function main(ns) {
                     return;
                 }
 
-                const splitPoint = Math.ceil(cloudNames.length / 2);
+                const splitPoint = Math.ceil(cloudNames.length * 0.1);
                 const buyrepClouds = cloudNames.slice(0, splitPoint);
                 const hackexpClouds = cloudNames.slice(splitPoint);
 
@@ -122,6 +122,7 @@ export async function main(ns) {
             }
         },
     };
+    
 
     // Show usage if no arg or invalid task. Note task "0" is safe here: the guard tests
     // `arg === ""` on the string, not the truthiness of the number, so "0" still dispatches.

@@ -64,6 +64,9 @@ export async function main(ns) {
     while (ns.isRunning(defaulterPid)) {
         await ns.sleep(200);
     }
+
+
+
     // Re-read from disk: cfgall.js rewrote cfg.json in another process, so the `cfg` object
     // read at the top of main() is stale.
     cfg = JSON.parse(ns.read("/data/cfg.json"));
@@ -72,284 +75,294 @@ export async function main(ns) {
     if (isFirstRunSinceReset) {
         ns.tprint("New augmentation reset detected — default cfg loaded.");
 
-        // Record the reset we just handled, so isFirstRunSinceReset is false on the next
-        // init.js run until another aug reset happens. Without this, lastAugReset was never
-        // written and every run redid the full bootstrap, wiping cfg.json back to defaults.
-        jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
-
-        // Placeholder for a future collected-results string; printResults() ignores it today.
-        const results = "";
-
-        // Fun little countdown nonsense
-        await nonsense(ns);
-
-        // run scanner to build "/data/networks.json"
-        scanNetwork(ns, true);
-        scanCloud(ns, true);
-
-        // read full server information to servers
-        const servers = JSON.parse(ns.read("/data/networks.json"));
-
-        // An aug reset revokes root on every server, so re-nuke everything we now qualify for.
-        // The `true` third arg is autoNuke's `quiet` flag - suppresses per-server log spam.
-        for (const targetServer of servers) {
-            autoNuke(ns, targetServer.hostname, true);
+        // Adds to cfg.json if player has singularity access
+        const hasSf4 = ns.getResetInfo().ownedSF.get(4) > 0;
+        const inBn4 = ns.getResetInfo().currentNode === 4;
+        if (hasSf4 || inBn4) {
+            ns.print("̷̢̛͇̈́̕͝ͅ▓̶̜̈́▒̸͙͌░̴̭̈ ░̷̙̋▒̶̜̈▓̶̬͌ ̷̺̽▓̸͍̀▒̴͌░̷͇͑ ░̴͈͝▒̸̗̆▓̸͌ ̵̯̕▓̸͇͑░̶͈͝▒̷͕̌ ̴̙̒▒̸̮̈▓̵̙̒░̴̭͊");
+            ns.print("̸̢̛U̷͖̅S̵̗̈́E̶̢͐R̷̤̀ ̴̼̚H̶̻͐A̸͙͌S̴̭̈ ̷̙̋S̶̜̈I̶̬͌N̷̺̽G̸͍̀Ṵ̴͌L̷͇̑A̴͈͝R̸̗̆Ị̸͌T̵̯̕Y̸͇͑ ̶͈͝Ǎ̷͕C̴͙̒C̸̮̈E̵̙̒S̴̭͊S̸̙̏)");
+            jsonEdit(ns, "hasSingularity", true);
         }
-
-        // Re-scan so networks.json records the root access just gained above -
-        // the first scan ran before any nuking, so its hasAdminRights flags are now out of date.
-        scanNetwork(ns, true);
-
-        // Restart the daemon so it picks up the freshly-defaulted cfg.json.
-        // ns.kill(filename, host, ...args) requires an EXACT args match, so this only kills a
-        // daemon.js that was launched with no args - a daemon started with args survives and
-        // you end up with two. Prefer PID-based killing via ns.ps() (see findings).
-        ns.kill("daemon.js", "home");
-        ns.run("daemon.js", 1);
-
-        // exec buyRAM
-
-        // exec buyHacknet
-
-        // exec joinFactions
-
-        // exec buyAugments
-
-        // exec buyTor and programs (SINGULARITY)
-
-        // exec watch
-
-        await printResults(ns, results, cfg);
     }
 
+    // Record the reset we just handled, so isFirstRunSinceReset is false on the next
+    // init.js run until another aug reset happens. Without this, lastAugReset was never
+    // written and every run redid the full bootstrap, wiping cfg.json back to defaults.
+    jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
 
-    /**
-     * Prints the post-bootstrap summary and next-step hints to the terminal.
-     * Terminal-facing, so ns.tprint rather than ns.print.
-     * @param {NS} ns - The Netscript API object
-     * @param {string} results - Currently unused; reserved for a collected results string
-     * @param {object} cfg - The freshly re-read configuration object; only cfg.watchedScripts is displayed
-     * @returns {Promise<void>}
-     */
-    async function printResults(ns, results, cfg) {
-        // check results and print accordingly (NEED TO DEFINE)
-        // Consider putting all watch into a single watch.js?
+    // Placeholder for a future collected-results string; printResults() ignores it today.
+    const results = "";
 
+    // Fun little countdown nonsense
+    await nonsense(ns);
 
+    // run scanner to build "/data/networks.json"
+    scanNetwork(ns, true);
+    scanCloud(ns, true);
 
-        // Print results
-        // ns.tprint("  Executed servWatch for automated nuking\n");
-        // ns.tprint("  Executed ramWatch for automated RAM purchasing\n");
-        // ns.tprint("  Executed hacknetWatch for automated hacknet purchasing \n");
-        // ns.tprint("  Executed augWatch for automated augmentation purchasing \n");
-        // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
-        ns.tprint("\n\nInitialisation:\n");
-        ns.tprint("  Network scanned and stored in ./data/networks.json\n");
-        ns.tprint("  Cloud servers updated and stored in ./data/clouds.json\n");
-        ns.tprint("  AutoNuked all servers\n");
-        ns.tprint("  daemon.js running - watching " + cfg.watchedScripts);
-        ns.tprint("  Remember to buy TOR router and buy programs with buy -l and buy -a");
-        ns.tprint('  "cfg toggle" to turn things on, or "cfg all" for full config');
-        ns.tprint('  "run go.js 1" or "run dispatch.js" to get started!');
+    // read full server information to servers
+    const servers = JSON.parse(ns.read("/data/networks.json"));
+
+    // An aug reset revokes root on every server, so re-nuke everything we now qualify for.
+    // The `true` third arg is autoNuke's `quiet` flag - suppresses per-server log spam.
+    for (const targetServer of servers) {
+        autoNuke(ns, targetServer.hostname, true);
     }
 
+    // Re-scan so networks.json records the root access just gained above -
+    // the first scan ran before any nuking, so its hasAdminRights flags are now out of date.
+    scanNetwork(ns, true);
+
+    // Restart the daemon so it picks up the freshly-defaulted cfg.json.
+    // ns.kill(filename, host, ...args) requires an EXACT args match, so this only kills a
+    // daemon.js that was launched with no args - a daemon started with args survives and
+    // you end up with two. Prefer PID-based killing via ns.ps() (see findings).
+    ns.kill("daemon.js", "home");
+    ns.run("daemon.js", 1);
+
+    // exec buyRAM
+
+    // exec buyHacknet
+
+    // exec joinFactions
+
+    // exec buyAugments
+
+    // exec buyTor and programs (SINGULARITY)
+
+    // exec watch
+
+    await printResults(ns, results, cfg);
+}
+
+
+/**
+ * Prints the post-bootstrap summary and next-step hints to the terminal.
+ * Terminal-facing, so ns.tprint rather than ns.print.
+ * @param {NS} ns - The Netscript API object
+ * @param {string} results - Currently unused; reserved for a collected results string
+ * @param {object} cfg - The freshly re-read configuration object; only cfg.watchedScripts is displayed
+ * @returns {Promise<void>}
+ */
+async function printResults(ns, results, cfg) {
+    // check results and print accordingly (NEED TO DEFINE)
+    // Consider putting all watch into a single watch.js?
+
+
+
+    // Print results
+    // ns.tprint("  Executed servWatch for automated nuking\n");
+    // ns.tprint("  Executed ramWatch for automated RAM purchasing\n");
+    // ns.tprint("  Executed hacknetWatch for automated hacknet purchasing \n");
+    // ns.tprint("  Executed augWatch for automated augmentation purchasing \n");
+    // ns.tprint("  Executed programWatch for automated TOR router and augmentation purchasing \n");
+    ns.tprint("\n\nInitialisation:\n");
+    ns.tprint("  Network scanned and stored in ./data/networks.json\n");
+    ns.tprint("  Cloud servers updated and stored in ./data/clouds.json\n");
+    ns.tprint("  AutoNuked all servers\n");
+    ns.tprint("  daemon.js running - watching " + cfg.watchedScripts);
+    ns.tprint("  Remember to buy TOR router and buy programs with buy -l and buy -a");
+    ns.tprint('  "cfg toggle" to turn things on, or "cfg all" for full config');
+    ns.tprint('  "run go.js 1" or "run dispatch.js" to get started!');
+}
+
+
+/**
+ * Plays a stylised cyberpunk boot animation in the terminal.
+ * Purely cosmetic - it changes no state and blocks for roughly 10 seconds while it runs.
+ * Works by repeatedly clearing the terminal (ns.ui.clearTerminal) and re-printing a frame,
+ * which is why every helper inside pairs a cls() with a term().
+ * @param {NS} ns - The Netscript API object
+ * @returns {Promise<void>}
+ */
+async function nonsense(ns) {
+    // Ultra-dramatic cyberpunk boot sequence for Bitburner terminal.
+
+    const chars =
+        "01アイウエオカキクケコサシスセソABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+        "abcdefghijklmnopqrstuvwxyz" +
+        "░▒▓█<>[]{}()/\\|!?@#$%^&*~`+-=_";
+
+    const width = 78;
+    const height = 20;
+
+    const messages = [
+        ">>> ESTABLISHING NEURAL LINK...",
+        ">>> DECRYPTING BLACK ICE...",
+        ">>> BYPASSING INTRUSION COUNTERMEASURES...",
+        ">>> ROOT ACCESS GRANTED",
+        ">>> LOADING COGNITIVE SUBROUTINES...",
+        ">>> SPOOFING BIOMETRIC SIGNATURE...",
+        ">>> WAKE UP, OPERATOR",
+        ">>> REALITY.EXE HAS CRASHED",
+        ">>> THE MATRIX HAS YOU...",
+        ">>> NO GODS. NO KINGS. ONLY ROOT.",
+        ">>> JACKING INTO THE MAINFRAME...",
+        ">>> INITIATING QUANTUM HANDSHAKE...",
+        ">>> MEMORY FIREWALL DISABLED",
+        ">>> DAEMONS AWAKENING...",
+        ">>> SYSTEM INTEGRITY: [██████████] 100%",
+    ];
+
+    // -----------------------------
+    // Helper functions
+    // -----------------------------
+    const cls = () => ns.ui.clearTerminal();            // wipe the terminal (one animation frame)
+    const term = (text = "") => ns.tprint(text);        // print one animation frame
+
+    // Inclusive on both ends: randInt(0, n - 1) is the safe index form used below.
+    const randInt = (min, max) =>
+        Math.floor(Math.random() * (max - min + 1)) + min;
+
+    const randChoice = (arr) => arr[randInt(0, arr.length - 1)];    // random element
+    const randChar = () => chars[randInt(0, chars.length - 1)];     // random glyph from `chars`
 
     /**
-     * Plays a stylised cyberpunk boot animation in the terminal.
-     * Purely cosmetic - it changes no state and blocks for roughly 10 seconds while it runs.
-     * Works by repeatedly clearing the terminal (ns.ui.clearTerminal) and re-printing a frame,
-     * which is why every helper inside pairs a cls() with a term().
-     * @param {NS} ns - The Netscript API object
+     * Builds one row of random glyphs, `width` characters wide.
+     * @returns {string} A single line of visual noise
+     */
+    function randomLine() {
+        let line = "";
+        for (let i = 0; i < width; i++) {
+            line += randChar();
+        }
+        return line;
+    }
+
+    /**
+     * Builds a full screen of noise, then overwrites a few random rows with flavour text
+     * so readable messages appear to surface out of the static.
+     * @returns {string} A `height`-line frame, newline joined
+     */
+    function randomFrame() {
+        const lines = [];
+
+        for (let i = 0; i < height; i++) {
+            lines.push(randomLine());
+        }
+
+        // Inject 1–3 messages. Rows are picked independently, so the same row can be
+        // chosen twice and one message simply overwrites the other - harmless here.
+        const injections = randInt(1, 3);
+        for (let i = 0; i < injections; i++) {
+            lines[randInt(0, height - 1)] = randChoice(messages);
+        }
+
+        return lines.join("\n");
+    }
+
+    /**
+     * Reveals text one character at a time, redrawing the whole terminal each step
+     * with a block cursor appended, then settles on the finished line.
+     * @param {string} text - The line to type out
+     * @param {number} [delay=30] - Milliseconds between characters
      * @returns {Promise<void>}
      */
-    async function nonsense(ns) {
-        // Ultra-dramatic cyberpunk boot sequence for Bitburner terminal.
-
-        const chars =
-            "01アイウエオカキクケコサシスセソABCDEFGHIJKLMNOPQRSTUVWXYZ" +
-            "abcdefghijklmnopqrstuvwxyz" +
-            "░▒▓█<>[]{}()/\\|!?@#$%^&*~`+-=_";
-
-        const width = 78;
-        const height = 20;
-
-        const messages = [
-            ">>> ESTABLISHING NEURAL LINK...",
-            ">>> DECRYPTING BLACK ICE...",
-            ">>> BYPASSING INTRUSION COUNTERMEASURES...",
-            ">>> ROOT ACCESS GRANTED",
-            ">>> LOADING COGNITIVE SUBROUTINES...",
-            ">>> SPOOFING BIOMETRIC SIGNATURE...",
-            ">>> WAKE UP, OPERATOR",
-            ">>> REALITY.EXE HAS CRASHED",
-            ">>> THE MATRIX HAS YOU...",
-            ">>> NO GODS. NO KINGS. ONLY ROOT.",
-            ">>> JACKING INTO THE MAINFRAME...",
-            ">>> INITIATING QUANTUM HANDSHAKE...",
-            ">>> MEMORY FIREWALL DISABLED",
-            ">>> DAEMONS AWAKENING...",
-            ">>> SYSTEM INTEGRITY: [██████████] 100%",
-        ];
-
-        // -----------------------------
-        // Helper functions
-        // -----------------------------
-        const cls = () => ns.ui.clearTerminal();            // wipe the terminal (one animation frame)
-        const term = (text = "") => ns.tprint(text);        // print one animation frame
-
-        // Inclusive on both ends: randInt(0, n - 1) is the safe index form used below.
-        const randInt = (min, max) =>
-            Math.floor(Math.random() * (max - min + 1)) + min;
-
-        const randChoice = (arr) => arr[randInt(0, arr.length - 1)];    // random element
-        const randChar = () => chars[randInt(0, chars.length - 1)];     // random glyph from `chars`
-
-        /**
-         * Builds one row of random glyphs, `width` characters wide.
-         * @returns {string} A single line of visual noise
-         */
-        function randomLine() {
-            let line = "";
-            for (let i = 0; i < width; i++) {
-                line += randChar();
-            }
-            return line;
-        }
-
-        /**
-         * Builds a full screen of noise, then overwrites a few random rows with flavour text
-         * so readable messages appear to surface out of the static.
-         * @returns {string} A `height`-line frame, newline joined
-         */
-        function randomFrame() {
-            const lines = [];
-
-            for (let i = 0; i < height; i++) {
-                lines.push(randomLine());
-            }
-
-            // Inject 1–3 messages. Rows are picked independently, so the same row can be
-            // chosen twice and one message simply overwrites the other - harmless here.
-            const injections = randInt(1, 3);
-            for (let i = 0; i < injections; i++) {
-                lines[randInt(0, height - 1)] = randChoice(messages);
-            }
-
-            return lines.join("\n");
-        }
-
-        /**
-         * Reveals text one character at a time, redrawing the whole terminal each step
-         * with a block cursor appended, then settles on the finished line.
-         * @param {string} text - The line to type out
-         * @param {number} [delay=30] - Milliseconds between characters
-         * @returns {Promise<void>}
-         */
-        async function typeLine(text, delay = 30) {
-            let current = "";
-            for (const ch of text) {
-                current += ch;
-                cls();
-                term(current + "█");
-                await ns.sleep(delay);
-            }
+    async function typeLine(text, delay = 30) {
+        let current = "";
+        for (const ch of text) {
+            current += ch;
             cls();
-            term(text);
+            term(current + "█");
+            await ns.sleep(delay);
         }
-
-        /**
-         * Animates a cosmetic 0-100% progress bar. Nothing is actually being measured -
-         * `duration` is split evenly across 25 fixed steps.
-         * @param {string} label - Caption printed above the bar
-         * @param {number} [duration=300] - Total milliseconds the bar takes to fill
-         * @returns {Promise<void>}
-         */
-        async function fakeProgress(label, duration = 300) {
-            const steps = 25;
-            for (let i = 0; i <= steps; i++) {
-                const filled = "█".repeat(i);
-                const empty = "░".repeat(steps - i);
-                const percent = String(Math.floor((i / steps) * 100)).padStart(3);
-                cls();
-                term(`${label}`);
-                term(`[${filled}${empty}] ${percent}%`);
-                await ns.sleep(duration / steps);
-            }
-        }
-
-        /**
-         * Prints `text` on every other iteration, pausing between each.
-         * Despite the name this does not flash: there is no cls() in the loop, so the "off"
-         * iterations add nothing and the result is `times / 2` stacked copies of the line
-         * appearing one after another. See findings.
-         * @param {string} text - The line to print
-         * @param {number} [times=4] - Loop iterations (half of which print)
-         * @param {number} [delay=120] - Milliseconds between iterations
-         * @returns {Promise<void>}
-         */
-        async function flash(text, times = 4, delay = 120) {
-            for (let i = 0; i < times; i++) {
-                if (i % 2 === 0) term(text);
-                await ns.sleep(delay);
-            }
-        }
-
-        // -----------------------------
-        // Phase 1: Initial corruption
-        // -----------------------------
-        const start = Date.now();
-        while (Date.now() - start < 2000) {
-            cls();
-            term(randomFrame());
-            await ns.sleep(60);
-        }
-
-        // -----------------------------
-        // Phase 2: Warning flashes
-        // -----------------------------
-        await flash("!! SIGNAL ACQUIRED !!", 6);
-        await flash("!! UNAUTHORIZED ACCESS DETECTED !!", 6);
-
-        // -----------------------------
-        // Phase 3: Typewriter messages
-        // -----------------------------
-        await typeLine("Establishing encrypted uplink...");
-        await ns.sleep(100);
-
-        await typeLine("Injecting daemons into target memory...");
-        await ns.sleep(100);
-
-        await typeLine("Bypassing black ICE...");
-        await ns.sleep(100);
-
-        // -----------------------------
-        // Phase 4: Progress bars
-        // -----------------------------
-        await fakeProgress("Decrypting secure channels...");
-        await fakeProgress("Loading autonomous agents...");
-        await fakeProgress("Synchronising botnet...");
-
-        // -----------------------------
-        // Phase 5: Countdown
-        // -----------------------------
         cls();
-        await ns.sleep(500);
+        term(text);
+    }
 
-        for (const n of [3, 2, 1]) {
+    /**
+     * Animates a cosmetic 0-100% progress bar. Nothing is actually being measured -
+     * `duration` is split evenly across 25 fixed steps.
+     * @param {string} label - Caption printed above the bar
+     * @param {number} [duration=300] - Total milliseconds the bar takes to fill
+     * @returns {Promise<void>}
+     */
+    async function fakeProgress(label, duration = 300) {
+        const steps = 25;
+        for (let i = 0; i <= steps; i++) {
+            const filled = "█".repeat(i);
+            const empty = "░".repeat(steps - i);
+            const percent = String(Math.floor((i / steps) * 100)).padStart(3);
             cls();
-            term(`
+            term(`${label}`);
+            term(`[${filled}${empty}] ${percent}%`);
+            await ns.sleep(duration / steps);
+        }
+    }
+
+    /**
+     * Prints `text` on every other iteration, pausing between each.
+     * Despite the name this does not flash: there is no cls() in the loop, so the "off"
+     * iterations add nothing and the result is `times / 2` stacked copies of the line
+     * appearing one after another. See findings.
+     * @param {string} text - The line to print
+     * @param {number} [times=4] - Loop iterations (half of which print)
+     * @param {number} [delay=120] - Milliseconds between iterations
+     * @returns {Promise<void>}
+     */
+    async function flash(text, times = 4, delay = 120) {
+        for (let i = 0; i < times; i++) {
+            if (i % 2 === 0) term(text);
+            await ns.sleep(delay);
+        }
+    }
+
+    // -----------------------------
+    // Phase 1: Initial corruption
+    // -----------------------------
+    const start = Date.now();
+    while (Date.now() - start < 2000) {
+        cls();
+        term(randomFrame());
+        await ns.sleep(30);
+    }
+
+    // -----------------------------
+    // Phase 2: Warning flashes
+    // -----------------------------
+    await flash("!! SIGNAL ACQUIRED !!", 6);
+    await flash("!! UNAUTHORIZED ACCESS DETECTED !!", 6);
+
+    // -----------------------------
+    // Phase 3: Typewriter messages
+    // -----------------------------
+    await typeLine("Establishing encrypted uplink...");
+    await ns.sleep(30);
+
+    await typeLine("Injecting daemons into target memory...");
+    await ns.sleep(20);
+
+    await typeLine("Bypassing black ICE...");
+    await ns.sleep(50);
+
+    // -----------------------------
+    // Phase 4: Progress bars
+    // -----------------------------
+    await fakeProgress("Decrypting secure channels...");
+    await fakeProgress("Loading autonomous agents...");
+    await fakeProgress("Synchronising botnet...");
+
+    // -----------------------------
+    // Phase 5: Countdown
+    // -----------------------------
+    cls();
+    await ns.sleep(100);
+
+    for (const n of [3, 2, 1]) {
+        cls();
+        term(`
  ███████╗
  ╚══${n}══╝
         `);
-            await ns.sleep(500);
-        }
-        // Dramatic pause
-        await ns.sleep(1000);
-        // -----------------------------
-        // Phase 6: Final reveal
-        // -----------------------------
-        cls();
-        term(`
+        await ns.sleep(200);
+    }
+    // Dramatic pause
+    await ns.sleep(500);
+    // -----------------------------
+    // Phase 6: Final reveal
+    // -----------------------------
+    cls();
+    term(`
 ██╗███╗   ██╗██╗████████╗██╗ █████╗ ██╗     ██╗███████╗███████╗██████╗
 ██║████╗  ██║██║╚══██╔══╝██║██╔══██╗██║     ██║╚══███╔╝██╔════╝██╔══██╗
 ██║██╔██╗ ██║██║   ██║   ██║███████║██║     ██║  ███╔╝ █████╗  ██║  ██║
@@ -358,11 +371,11 @@ export async function main(ns) {
 ╚═╝╚═╝  ╚═══╝╚═╝   ╚═╝   ╚═╝╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝╚═════╝
 `);
 
-        // -----------------------------
-        // Phase 7: (unused - countdown already happens in Phase 5)
-        // -----------------------------
+    // -----------------------------
+    // Phase 7: (unused - countdown already happens in Phase 5)
+    // -----------------------------
 
 
 
-    }
 }
+

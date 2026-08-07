@@ -5,6 +5,7 @@
   "autoStocks": false,
   "autobuyClouds": false,
   "autobuyHacknet": false,
+  "hasSingularity": false,
   "hacknetBuySleep": 10,
   "hacknetPercSpend": 75,
   "securityThresh": 5,
@@ -26,6 +27,7 @@
     "cloudpush.js"
   ],
   "gangCfg": {
+    "autoAscend": true,
     "enableBuyWeapons": true,
     "enableBuyArmour": true,
     "enableBuyVehicles": true,
