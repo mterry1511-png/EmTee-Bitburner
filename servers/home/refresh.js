@@ -1,7 +1,7 @@
 // import functions required
 import { scanNetwork } from "./scanner.js";
 import { scanCloud } from "./scanner.js";
-import { autoNuke, getRootedServers } from "./lib/util.js";
+import { autoNuke, getRootedServers, resetCfgToDefaults } from "./lib/util.js";
 
 // IDEA - later this can be turned into a controller which is timed, compares besttarget array and restarts deployer if the top cfg.maxDispatchServers entries changes 
 
@@ -30,14 +30,17 @@ import { autoNuke, getRootedServers } from "./lib/util.js";
  * Note it is also runnable directly from the terminal, where "-q" sets quiet.
  * @param {NS} ns - The Netscript API object
  * @param {boolean} [quiet=false] - If true, disables this script's own logging. Note the nested scanNetwork/scanCloud calls are hardcoded quiet regardless
+ * @param {boolean} [hasSing=false] - True if the player has Singularity (SF4) access, gating the singularity-only block below
  * @returns {Promise<void>}
  */
-// The quiet flag is the only parameter - there is deliberately no target/mode
-// arg, this always refreshes everything.
-export async function main(ns, quiet = false) {
+export async function main(ns, quiet = false, hasSing = false) {
     quiet = quiet || ns.args.includes("-q");
     if (quiet) {
         ns.disableLog("ALL");
+    }
+
+    // singularity only block
+    if (hasSing) {
     }
 
     // First pass: build "/data/networks.json" so we have a hostname list to work from
@@ -62,7 +65,7 @@ export async function main(ns, quiet = false) {
     getRootedServers(ns);
 
     // Print for user
-//     ns.ui.clearTerminal();
-//     ns.tprint("Refreshed ./data/networks.json");
-//     ns.tprint("Executed ./lib/util.autonuke)");
+    //     ns.ui.clearTerminal();
+    //     ns.tprint("Refreshed ./data/networks.json");
+    //     ns.tprint("Executed ./lib/util.autonuke)");
 }

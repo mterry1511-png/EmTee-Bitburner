@@ -13,6 +13,15 @@ Numbers below are post-pass where verified, but treat them as approximate.
 Status key:
 - **CONFIRMED** — verified by reading the code directly.
 - **REPORTED** — raised by a review agent, not yet independently checked.
+- **STALE** — code has changed since the finding was logged; no longer applies as written.
+- **AMBIGUOUS** — needs a judgment call or an in-game test, not more code-reading.
+
+**Verification pass (2026-08-07):** a read-only agent re-checked every remaining REPORTED
+item (excluding the four already-fixed items noted under Orchestration below) against
+current code. Result: ~78 CONFIRMED, 4 STALE, 0 false-positives, 3 AMBIGUOUS. All are
+annotated in place below. Scope for actually fixing this list is not yet decided — deferred
+by the user on 2026-08-07 pending a prioritization pass (crash/hang-only vs.
+crash+corruption vs. everything).
 
 ---
 
@@ -165,6 +174,10 @@ files are byte-identical to `HEAD` once comments and blank lines are stripped.
 - **`:12` — the flag can never match anyway.** `argmap` is lowercased via `.map(a => a.toLowerCase())`,
   then compared against the mixed-case literal `"--getAvailableThreads"`. Unreachable regardless of
   the shadowing. `--openports`/`help` only work because they're already lowercase.
+  **AMBIGUOUS (2026-08-07):** still true as described, but this whole `main()` terminal
+  entry point looks like dead/unused tooling — the real logic lives in the exported library
+  functions. Judgment call needed on whether to fix this dispatcher or just delete it, rather
+  than patching a rarely-used path.
 - **`:14` — `targetServer` picks up the flag as a hostname.** `ns.args[0] ?? ns.getHostname()` — for
   the documented `run util.js --openports`, `args[0]` *is* the flag, so `autoNuke(ns, "--openports")`
   gets called. Only the two-arg form works.
@@ -189,7 +202,9 @@ files are byte-identical to `HEAD` once comments and blank lines are stripped.
 
 ### `lib/remotekill.js` / `lib/format.js`
 
-- **`remotekill.js:7` — `async` with nothing to await.** `ns.ps`/`ns.kill` are synchronous.
+- **`remotekill.js:7` — `async` with nothing to await.** **STALE (verified 2026-08-07)** — the
+  function now contains `await ns.sleep(50)` inside the kill loop (`:29`), so `async` is
+  load-bearing, not gratuitous. No action needed.
 - **`format.js:10` — `main` is an empty exported stub** in a pure-library file. Not required for an
   import-only module.
 - **`format.js:28` — `let sign` + if/else** where `const sign = number < 0 ? "-" : "";` fits the
@@ -243,7 +258,10 @@ look like a scheduler bug.
 
 ### `cloud/buycloud.js`
 
-- **`:78` — `buy()` writes a garbage registry entry when the player can't afford 2GB.**
+- ~~**`:78` — `buy()` writes a garbage registry entry when the player can't afford 2GB.**~~
+  **RESOLVED / STALE (verified 2026-08-07).** Already fixed per the 2026-08-04 CLAUDE.md note —
+  both `buy()` and `minBuy()` now guard on `purchaseServer`'s `""` failure return before calling
+  `getServerMaxRam`. Original finding text kept below for reference.
   `ns.cloud.purchaseServer` **returns `""` on failure** (money shortfall *or* the max-servers cap),
   and the return is unchecked. Then `ns.getServerMaxRam("")` throws — after a false
   `"Bought server  with 2GB…"` has already hit the terminal. Had it not thrown, a `""` key would
@@ -315,9 +333,10 @@ look like a scheduler bug.
 
 ### `refresh.js`
 
-- **`:16` — `//doesn't take args by design` contradicts `main(ns, quiet = false)` on the next line**,
-  which also reads `ns.args` for `-q`. Comment corrected; the underlying ambiguity should be resolved.
-- **`:17` — `quiet` is accepted but nearly inert.** Only calls `disableLog("ALL")`; both nested scans
+- ~~**`:16` — `//doesn't take args by design` contradicts `main(ns, quiet = false)`**~~ **STALE
+  (verified 2026-08-07)** — that comment no longer exists; the header was rewritten with proper
+  JSDoc. No action needed.
+- **`:17` — `quiet` is accepted but nearly inert.** **CONFIRMED (2026-08-07), still live.** Only calls `disableLog("ALL")`; both nested scans
   and `autoNuke` are hardcoded `true`, and the `tprint`s are commented out at `:40-42`. So
   `refresh(ns, false)` and `refresh(ns, true)` are indistinguishable.
 - **`:24` and `:35` — `scanNetwork` runs twice per daemon tick.** Deliberate and documented, but it's
@@ -487,8 +506,10 @@ imported for this and is otherwise unused.
 
 ## new/ + stocks + corp + gang
 
-All items below are **REPORTED** — recorded verbatim from the review agent, not independently
-verified, to save tokens. Verify before acting on any of them.
+**Verified 2026-08-07.** Items below were originally recorded verbatim from the review agent
+without independent verification; a follow-up read-only pass has now confirmed the large
+majority against current code (see the STALE/AMBIGUOUS call-outs inline where a specific item
+didn't hold up — everything else in this section is CONFIRMED).
 
 **Headline:** `new/singularity.js` contains **zero `ns.singularity.*` calls** and has no SF4
 dependency at all. It is not an inert SF4 wrapper — it is a self-contained re-implementation of
@@ -622,8 +643,11 @@ anywhere. Nothing to flag there.
 - **`:129` — `switch` has no `default`, so `buyCheapest` can return `undefined`.**
   `while (buyCheapest(ns))` would then exit silently as if broke. Unreachable today.
 - **`:38` — `getPurchaseNodeCost()` called twice, first result unused.** `newNodeCost` never read.
-- **`:21,35` — config read twice per iteration under two names** (`cfgglobal`, `cfg`), one disk
-  read per upgrade.
+- ~~**`:21,35` — config read twice per iteration under two names**~~ **STALE (verified
+  2026-08-07)** — inaccurate as stated against current code: `cfgglobal` in `main()` is read
+  exactly once, outside the `while` loop (used only for `hacknetBuySleep`), not per iteration.
+  Only `buyCheapest`'s internal `cfg` read happens once per call. One disk read per upgrade, not
+  two. No action needed.
 
 ### `new/watch.js`, `new/cloudwatch.js`, `new/servwatch.js`
 

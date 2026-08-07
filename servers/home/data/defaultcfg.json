@@ -5,6 +5,8 @@
   "autoStocks": false,
   "autobuyClouds": false,
   "autobuyHacknet": false,
+  "autobuyPrograms": true,
+  "autobuyHomeUpgrades": true,
   "hasSingularity": false,
   "hacknetBuySleep": 10,
   "hacknetPercSpend": 75,

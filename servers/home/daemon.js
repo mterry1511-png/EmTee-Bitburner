@@ -25,6 +25,9 @@ import * as buyHacknetNodes from "./watch/buyhacknetnodes.js";
  * @returns {Promise<void>} Never resolves - loops until killed or a config error aborts it
  */
 export async function main(ns) {
+    let cfg = JSON.parse(ns.read("/data/cfg.json"));
+    const hasSing = cfg.hasSingularity;
+
     // Declared out here (not inside the loop) so the ns.atExit closure below can still see the
     // latest values when the daemon is killed - a loop-scoped const would be out of reach.
     let clouds;
@@ -49,6 +52,7 @@ export async function main(ns) {
 
     ns.disableLog("disableLog");
     ns.disableLog("sleep");
+    ns.disableLog("singularity.purchaseTor");
 
     // Close all children when killed, so watched scripts don't outlive the daemon that
     // started them. The third argument mirrors ensureRunning's launch convention
@@ -69,7 +73,7 @@ export async function main(ns) {
     while (true) {
         // Re-read config every tick rather than once at startup, so edits made via the cfg/*
         // editors are picked up on the next tick without restarting the daemon.
-        const cfg = JSON.parse(ns.read("/data/cfg.json"));
+        cfg = JSON.parse(ns.read("/data/cfg.json"));
 
         // Clouds list - maintained in .json and by buyserver.js
         clouds = JSON.parse(ns.read("/data/clouds.json"));
@@ -83,12 +87,41 @@ export async function main(ns) {
         ns.print(`\n [${time}]`);
 
         //// MAIN EXECUTION BLOCK
+        // Singularity block        
+        if (hasSing) {
+            // purchase tor router
+            ns.singularity.purchaseTor();
+
+            // purchase affordable programs
+            if (cfg.autobuyPrograms) {
+                const torPrograms = ns.singularity.getDarkwebPrograms();
+
+                for (const program of torPrograms) {
+                    if (!ns.fileExists(program, "home")) {
+                        const programCost = ns.singularity.getDarkwebProgramCost(program);
+                        const money = ns.getPlayer().money;
+                        const affordable = money > programCost && money != 0;
+                        if (affordable) { ns.singularity.purchaseProgram(program); }
+                    }
+                }
+            }
+
+            // purchase affordable home upgrades
+            if (cfg.autobuyHomeUpgrades) {
+                const money = ns.getPlayer().money;
+                const coreCost = ns.singularity.getUpgradeHomeCoresCost();
+                const ramCost = ns.singularity.getUpgradeHomeRamCost();
+                if (money >= coreCost) { upgradeHomeCores();}
+                else if (money >= ramCost) { upgradeHomeCores();}
+            }
+        }
+
         // Refresh network, autonuke+root, update networks.json/clouds.json/rooted.json.
         // Skipped entirely while scheduler.js is alive: the scheduler owns refresh.js when it
         // is running (it needs the scan on its own cadence), so running it here too would
         // duplicate the work and fight over the same json files.
         if (!ns.isRunning("scheduler.js", "home")) {
-            await refresh(ns, true);
+            await refresh(ns, true, hasSing);
         }
 
         // Guard against acting on stale data: if the daemon ticks faster than the refresh

@@ -64,9 +64,14 @@ export async function main(ns) {
     while (ns.isRunning(defaulterPid)) {
         await ns.sleep(200);
     }
-
-
-
+    // Adds to cfg.json if player has singularity access
+    const hasSf4 = ns.getResetInfo().ownedSF.get(4) > 0;
+    const inBn4 = ns.getResetInfo().currentNode === 4;
+    if (hasSf4 || inBn4) {
+        ns.print("̷̢̛͇̈́̕͝ͅ▓̶̜̈́▒̸͙͌░̴̭̈ ░̷̙̋▒̶̜̈▓̶̬͌ ̷̺̽▓̸͍̀▒̴͌░̷͇͑ ░̴͈͝▒̸̗̆▓̸͌ ̵̯̕▓̸͇͑░̶͈͝▒̷͕̌ ̴̙̒▒̸̮̈▓̵̙̒░̴̭͊");
+        ns.print("̸̢̛U̷͖̅S̵̗̈́E̶̢͐R̷̤̀ ̴̼̚H̶̻͐A̸͙͌S̴̭̈ ̷̙̋S̶̜̈I̶̬͌N̷̺̽G̸͍̀Ṵ̴͌L̷͇̑A̴͈͝R̸̗̆Ị̸͌T̵̯̕Y̸͇͑ ̶͈͝Ǎ̷͕C̴͙̒C̸̮̈E̵̙̒S̴̭͊S̸̙̏)");
+        jsonEdit(ns, "hasSingularity", true);
+    }
     // Re-read from disk: cfgall.js rewrote cfg.json in another process, so the `cfg` object
     // read at the top of main() is stale.
     cfg = JSON.parse(ns.read("/data/cfg.json"));
@@ -75,30 +80,21 @@ export async function main(ns) {
     if (isFirstRunSinceReset) {
         ns.tprint("New augmentation reset detected — default cfg loaded.");
 
-        // Adds to cfg.json if player has singularity access
-        const hasSf4 = ns.getResetInfo().ownedSF.get(4) > 0;
-        const inBn4 = ns.getResetInfo().currentNode === 4;
-        if (hasSf4 || inBn4) {
-            ns.print("̷̢̛͇̈́̕͝ͅ▓̶̜̈́▒̸͙͌░̴̭̈ ░̷̙̋▒̶̜̈▓̶̬͌ ̷̺̽▓̸͍̀▒̴͌░̷͇͑ ░̴͈͝▒̸̗̆▓̸͌ ̵̯̕▓̸͇͑░̶͈͝▒̷͕̌ ̴̙̒▒̸̮̈▓̵̙̒░̴̭͊");
-            ns.print("̸̢̛U̷͖̅S̵̗̈́E̶̢͐R̷̤̀ ̴̼̚H̶̻͐A̸͙͌S̴̭̈ ̷̙̋S̶̜̈I̶̬͌N̷̺̽G̸͍̀Ṵ̴͌L̷͇̑A̴͈͝R̸̗̆Ị̸͌T̵̯̕Y̸͇͑ ̶͈͝Ǎ̷͕C̴͙̒C̸̮̈E̵̙̒S̴̭͊S̸̙̏)");
-            jsonEdit(ns, "hasSingularity", true);
-        }
-    }
+        // Record the reset we just handled, so isFirstRunSinceReset is false on the next
+        // init.js run until another aug reset happens. Without this, lastAugReset was never
+        // written and every run redid the full bootstrap, wiping cfg.json back to defaults.
+        jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
 
-    // Record the reset we just handled, so isFirstRunSinceReset is false on the next
-    // init.js run until another aug reset happens. Without this, lastAugReset was never
-    // written and every run redid the full bootstrap, wiping cfg.json back to defaults.
-    jsonEdit(ns, "lastAugReset", resetInfo.lastAugReset);
+        // Fun little countdown nonsense
+        await nonsense(ns);
+    }
 
     // Placeholder for a future collected-results string; printResults() ignores it today.
     const results = "";
 
-    // Fun little countdown nonsense
-    await nonsense(ns);
-
     // run scanner to build "/data/networks.json"
-    scanNetwork(ns, true);
-    scanCloud(ns, true);
+    await scanNetwork(ns, true);
+    await scanCloud(ns, true);
 
     // read full server information to servers
     const servers = JSON.parse(ns.read("/data/networks.json"));
@@ -111,7 +107,7 @@ export async function main(ns) {
 
     // Re-scan so networks.json records the root access just gained above -
     // the first scan ran before any nuking, so its hasAdminRights flags are now out of date.
-    scanNetwork(ns, true);
+    await scanNetwork(ns, true);
 
     // Restart the daemon so it picks up the freshly-defaulted cfg.json.
     // ns.kill(filename, host, ...args) requires an EXACT args match, so this only kills a
@@ -142,13 +138,11 @@ export async function main(ns) {
  * @param {NS} ns - The Netscript API object
  * @param {string} results - Currently unused; reserved for a collected results string
  * @param {object} cfg - The freshly re-read configuration object; only cfg.watchedScripts is displayed
- * @returns {Promise<void>}
+ * @returns {Promise<void>} 
  */
 async function printResults(ns, results, cfg) {
     // check results and print accordingly (NEED TO DEFINE)
     // Consider putting all watch into a single watch.js?
-
-
 
     // Print results
     // ns.tprint("  Executed servWatch for automated nuking\n");
@@ -183,7 +177,7 @@ async function nonsense(ns) {
         "abcdefghijklmnopqrstuvwxyz" +
         "░▒▓█<>[]{}()/\\|!?@#$%^&*~`+-=_";
 
-    const width = 78;
+    const width = 77;
     const height = 20;
 
     const messages = [
