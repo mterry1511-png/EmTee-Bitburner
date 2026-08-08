@@ -153,8 +153,8 @@ export async function main(ns) {
         }
 
         // autoascend gang
-        if (cfg.gangCfg.autoAscend) {
-            await autoAscend(ns);
+        if (ns.gang.inGang() && cfg.gangCfg.autoAscend) {
+            await autoAscend(ns, cfg.gangCfg.ascendThreshold);
             }
 
         // Stock market

@@ -40,6 +40,13 @@ export async function main(ns) {
         return;
     }
 
+    const cfg = JSON.parse(ns.read("/data/cfg.json"));
+
+    if (cfg.gangCfg.autoAscend && !ns.args.includes("override") ) {
+        ns.tprint("Error: Disable auto ascend or override with arg 'override'");
+        return;
+    }
+
     // open tail by default
     ns.ui.openTail();
     // ns.ui.setTailMinimized(false); // true: min, false: max
@@ -52,13 +59,10 @@ export async function main(ns) {
     ns.disableLog("disableLog");
     ns.disableLog("gang.purchaseEquipment");
 
-    // STALE: read but never used. There is no cfg-driven behaviour in this file.
-    const cfg = JSON.parse(ns.read("/data/cfg.json"));
-
     const equipments = ns.gang.getEquipmentNames();
     const members = ns.gang.getMemberNames();
 
-    // Observes cfg settings
+    // will observe cfg settings
     let shoppingList = [];
 
     // Build pass: keep every item affordable at CURRENT money, then sort

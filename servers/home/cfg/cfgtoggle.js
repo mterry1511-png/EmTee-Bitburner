@@ -1,13 +1,14 @@
 import { jsonEdit, promptField, getByPath } from "../lib/util.js";
 
 /**
- * Prompts for every top-level on/off switch in cfg.json and writes the answers.
+ * Prompts for every on/off switch in cfg.json and writes the answers - top-level
+ * booleans plus gangCfg.autoAscend, the sole nested one.
  * All fields here are booleans, so promptField renders each as a real Yes/No
  * dialog rather than a text box. Current values come from the live cfg.json; the
  * displayed defaults are looked up from defaultcfg.json, not
  * hardcoded - which is why e.g. autobuyHacknet now shows false as its default.
  * Passing the "default" argument (case-insensitive) skips the prompts and resets
- * these six keys. Passing one of the field keys instead (also case-insensitive,
+ * these seven keys. Passing one of the field keys instead (also case-insensitive,
  * e.g. "autobuyclouds") skips the prompt loop and quick-toggles just that field.
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
@@ -31,7 +32,8 @@ export async function main(ns) {
         { key: "autobuyPrograms", label: "Autobuy darkweb programs?", type: "boolean" },
         { key: "autobuyHomeUpgrades", label: "Autobuy home RAM upgrades?", type: "boolean" },
         { key: "autoStocks", label: "Run Stock Market Tool?", type: "boolean" },
-        { key: "deployToHome", label: "Deploy to home? Bool", type: "boolean" }
+        { key: "deployToHome", label: "Deploy to home? Bool", type: "boolean" },
+        { key: "gangCfg.autoAscend", label: "Auto-ascend gang members?", type: "boolean" }
     ];
 
     // Can use specific args to quick toggle

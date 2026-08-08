@@ -8,7 +8,7 @@
  * @returns {string[]} The array of possible autocomplete options
  */
 export function autocomplete(data, args) {
-  return ["all", "clouds", "hacknet", "hacking", "toggle", "view", "defaults"];
+  return ["all", "clouds", "hacknet", "hacking", "gang", "toggle", "view", "defaults"];
 }
 
 
@@ -29,7 +29,7 @@ export async function main(ns) {
     if (!choice) {
         choice = await ns.prompt("Select the cfg category", {
             type: "select",
-            choices: ["all", "clouds", "hacknet", "hacking", "toggle", "view", "defaults"]
+            choices: ["all", "clouds", "hacknet", "hacking", "gang", "toggle", "view", "defaults"]
         });
     }
 
@@ -47,6 +47,9 @@ export async function main(ns) {
             break;
         case "hacking":
             script = "cfg/cfgtarget.js";
+            break;
+        case "gang":
+            script = "cfg/cfggang.js";
             break;
         case "toggle":
             script = "cfg/cfgtoggle.js";

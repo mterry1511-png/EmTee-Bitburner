@@ -30,11 +30,13 @@
   ],
   "gangCfg": {
     "autoAscend": true,
+    "ascendThreshold": 1.1,
+    "gangStrategy": "hack",
     "enableBuyWeapons": true,
     "enableBuyArmour": true,
     "enableBuyVehicles": true,
     "enableBuyRootkits": true,
-    "englableBuyAugs": true
+    "enableBuyAugs": true
   },
   "purchaseConfig": {
     "maxPercSpend": 50,
