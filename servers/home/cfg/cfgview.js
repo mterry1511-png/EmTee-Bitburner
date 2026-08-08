@@ -9,9 +9,6 @@
 export async function main(ns) {
     const cfg = JSON.parse(ns.read("/data/cfg.json"));
 
-
-
-
     if (cfg.hasSingularity) {
         ns.singularity.cat("/data/cfg.json");
     }

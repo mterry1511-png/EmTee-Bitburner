@@ -1,34 +1,22 @@
 EmTee's Bitburner v1.x
-Trimmed up bugs and ensureRunning().
-
-(Test branch: this line added to try out the merge/prune workflow. Safe to merge or discard.)
 
 Next steps:
-Seems like an issue with minbuy call - crashed on first  - seems to still be a problem?
-
 - add money rounding import function - $1k, $1mil, $1bil etc
 
-- dispatch mode - spread across cloud servers? or just bosh out the threads scheduler already.
-
-- add to daemon: 
-    Hacknet buy script
-    programs buy script  !! REQUIRES SINGULARITY (add flags for dispatch.js to relaunch)
-        Relaunch dispatch.js every x time or on flag
-    read user money / skills to auto run go.js (???)
-
--set defaults in cfg scripts
-
-- Dashboard for cloud servers status?????
+In progress:
+- Scheduler (see servers/home/scheduler/CLAUDE.md)
+  - use all servers in the scheduler and cloudpush to all (conserver space on server by launching infrequently?
+)
 
 Future:
-- Scheduler!
-- BIG batching hack code
+- Dashboard for cloud servers status?????
+- BIG batching hack code (Batcher, builds on the scheduler)
 - Stock market code
 
-Future (Requires singularity):
-- backdoor everything
+ (Requires singularity):
+- autoascend
+- backdoor everything - make list of priority servers
 - autojoin factions
-- Autobuy programs
 
 
                  ``          

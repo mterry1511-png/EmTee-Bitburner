@@ -2,6 +2,8 @@ import { main as refresh } from "./refresh.js";
 import { main as upgradeClouds } from "./cloud/upgradeclouds.js";
 import { ensureRunning } from "./lib/util.js";
 import * as buyHacknetNodes from "./watch/buyhacknetnodes.js";
+import { main as buyPrograms } from "./watch/buyprograms.js";
+import { main as autoAscend } from "./gang/autoascend.js";
 
 /**
  * The long-running background caretaker: one tick every cfg.daemonSleep ms, forever.
@@ -89,30 +91,18 @@ export async function main(ns) {
         //// MAIN EXECUTION BLOCK
         // Singularity block        
         if (hasSing) {
-            // purchase tor router
+            // purchase tor router - ungated by autobuyPrograms since it's a one-time prerequisite
+            // purchase, not an ongoing spend
             ns.singularity.purchaseTor();
 
             // purchase affordable programs
             if (cfg.autobuyPrograms) {
-                const torPrograms = ns.singularity.getDarkwebPrograms();
-
-                for (const program of torPrograms) {
-                    if (!ns.fileExists(program, "home")) {
-                        const programCost = ns.singularity.getDarkwebProgramCost(program);
-                        const money = ns.getPlayer().money;
-                        const affordable = money > programCost && money != 0;
-                        if (affordable) { ns.singularity.purchaseProgram(program); }
-                    }
-                }
+                await buyPrograms(ns);
             }
 
             // purchase affordable home upgrades
             if (cfg.autobuyHomeUpgrades) {
-                const money = ns.getPlayer().money;
-                const coreCost = ns.singularity.getUpgradeHomeCoresCost();
-                const ramCost = ns.singularity.getUpgradeHomeRamCost();
-                if (money >= coreCost) { upgradeHomeCores();}
-                else if (money >= ramCost) { upgradeHomeCores();}
+                await buyUpgrades(ns);
             }
         }
 
@@ -162,7 +152,10 @@ export async function main(ns) {
             }
         }
 
-        // TOR router and programs auto buy (requires singularity)
+        // autoascend gang
+        if (cfg.gangCfg.autoAscend) {
+            await autoAscend(ns);
+            }
 
         // Stock market
         // if (ns.stock.hasWseAccount & ns.stock.hasTixApiAccess & ns.stock.has4SDataTixApi) {

@@ -1,5 +1,16 @@
 # scheduler.js Implementation Plan
 
+> This is the authoritative scheduler doc — `servers/home/scheduler/CLAUDE.md`
+> used to hold a higher-level design summary but had drifted stale (it still
+> described array-based `fillerPids`, an unbounded failure log, and a
+> separate "reserved" RAM concept, all superseded by the decisions below) and
+> was deleted in favor of this file. This is a deliberate, permanent
+> exception to the root CLAUDE.md's "notes belong in CLAUDE.md, not `docs/`"
+> rule — same rationale as `docs/review-findings.md` (code-level detail and
+> scaffolding here would bury a CLAUDE.md file meant to stay prose-level),
+> except this one isn't transient: it stays put as the scheduler's
+> implementation reference rather than getting worked through and deleted.
+
 ## Context
 
 `dispatch.js`/`deployer.js` currently launch HGW threads with no central coordination: each script independently checks free RAM, then execs — a check-then-act race where RAM consumed between the check and the exec can cause failed or oversized launches. The scheduler replaces this with a single process that owns every `ns.exec` call for scheduled work: callers request threads over a port, the scheduler allocates and launches directly, and never hands a thread count back to the caller to exec themselves. This also creates a place to run low-priority "filler" work (share-for-rep, XP-grinding) that fills idle RAM and gets pre-empted instantly when real work needs the room, and a place to own periodic housekeeping (network refresh) that `daemon.js` currently does inline.
@@ -106,11 +117,26 @@ New `cfg.json`/`defaultcfg.json` keys needed (don't exist yet — add via the ma
  */
 ```
 
+## Counters
+
+- `waitCounter` — increments when a request's needed threads weren't
+  immediately available but became available after evicting fillers.
+  Signals "fillers are doing their job, buying you headroom."
+- `failCounter` — increments when a request is rejected because
+  insufficient threads remain even after evicting all reachable fillers.
+  Signals "you're structurally out of RAM and need to either reduce
+  workload or upgrade capacity."
+- Both accumulate indefinitely, never reset by the scheduler itself or by
+  `init.js`'s post-reset flow — same treatment as `cfg.json`, only explicit
+  user action should zero these. (Increment granularity — once per cycle,
+  not once per request — is covered under Decisions made this session,
+  above.)
+
 ## Existing code to reuse
 
 - `lib/util.js`: `jsonEdit(ns, key, value, filepath)` (~L159-184) for `state.json` writes — **does not auto-vivify** nested keys, so `state.json` must be pre-seeded with `ns.write` before any `jsonEdit` call touches it (see State seeding below). `getByPath(obj, key)` (~L192-194) for reads.
 - `lib/util.js`'s `getAvailableThreads` (~L144-148) is **not** directly reusable for the scheduler's multi-host snapshot: it re-parses `cfg.json` from disk per call (wasteful in a snapshot loop) and applies `leaveRamFree` uniformly to every host, which contradicts the home-only-ceiling rule. Write a new multi-host snapshot function in `scheduler-utils.js` instead, following the same RAM-formula shape.
-- `/data/rooted.json` (written by `getRootedServers` in `util.js`) is the candidate-hosts list for everything except home — it already combines rooted network servers and cloud hostnames into one flat `string[]`, excluding `home` (since `home.purchasedByPlayer === true`). Candidate hosts for allocation = `["home", ...JSON.parse(ns.read("/data/rooted.json"))]`.
+- `/data/rooted.json` (written by `getRootedServers` in `util.js`) is the candidate-hosts list for everything except home — it already combines rooted network servers and cloud hostnames into one flat `string[]`, excluding `home` (since `home.purchasedByPlayer === true`). Candidate hosts for allocation = `["home", ...JSON.parse(ns.read("/data/rooted.json"))]`. `refresh.js` calls `getRootedServers(ns)` each cycle (after `scanNetwork`/`scanCloud`), which merges `networks.json` (filtered by `hasAdminRights && !purchasedByPlayer`) with `clouds.json` keys — avoiding double-counting cloud servers, which would otherwise appear in both as `purchasedByPlayer` network entries and as owned cloud servers — and caches the result to `rooted.json`. The scheduler reads that cached file directly rather than recomputing the merge itself, staying in sync with `refresh.js`'s own scan cadence.
 - `dispatch.js`'s RAM-wait formula (`maxRam - usedRam - cfg.leaveRamFree`, ~L91) is the same shape the scheduler's home-snapshot line should match.
 - Self-kill guard: copy `daemon.js`'s existing pattern (~L18-23) — capture `selfPid = ns.pid`, kill any other `scheduler.js` instance on startup.
 - Filler = `lib/share.js` only, for now (a single `ns.share()` call — same script `buyrep.js` already uses as its cloud-filling worker, see `buyrep.js` L70-93). `hackexp.js` and other filler options are deferred; don't design for them yet.
@@ -130,7 +156,7 @@ Structure to aim for, per iteration of `while (true)`:
 6. Update `state.json` counters if this cycle needed eviction (`waitCounter`) or hit a hard failure (`failCounter`) — once per cycle, not once per request, per the earlier decision.
 
 Things worth getting right as you write it:
-- `PORT_RESP` is shared by every caller — the scheduler only ever *writes* to it, never reads. Pop-check-requeue (skip a response that isn't yours, write it straight back) is the *caller's* responsibility, not the scheduler's.
+- `PORT_RESP` is shared by every caller — the scheduler only ever *writes* to it, never reads. Pop-check-requeue (skip a response that isn't yours, write it straight back) is the *caller's* responsibility, not the scheduler's: `ns.readPort` (pop) the front message, and if its `requestId` doesn't match, `ns.writePort` it straight back with no `await` in between, then repeat. A message can get "lapped" under concurrent load — that's added latency for that caller, not a correctness issue. `ns.peek()` only ever shows the front of the queue non-destructively — it cannot scan for a specific message further back, which is exactly why response routing needs pop-check-requeue rather than peek-and-filter.
 - If you're calling `jsonEdit` for both counters in the same cycle, it reads-and-parses the whole file per call — read `state.json` once per cycle yourself and reuse that in-memory value for both checks rather than triggering two separate file reads.
 
 ## Allocation algorithm
@@ -203,6 +229,8 @@ function allocate(ns, request, cfg, hosts) {
 
 Keep this as simple as `buyrep.js` already is (`buyrep.js` L70-93) — one filler script (`lib/share.js`, plain `ns.share()`), one PID tracked per host, no options/config surface yet. Don't build a general filler-script framework; that's for later if a second filler type is ever needed.
 
+`fillerPids` lives only as an in-memory module-level object in the running scheduler process — it is never persisted to disk. PIDs are only ever valid for the scheduler process that spawned them and are meaningless across a restart, so there's nothing to gain from writing them anywhere.
+
 `lib/scheduler-utils.js`, module-level `fillerPids = {}` (`{ [host]: pid }`, one entry per host — never an array):
 
 - **Top-up, per host, per cycle:**
@@ -249,6 +277,15 @@ export function logFailure(ns, { requestId, script, threads, reason }) {
 
 - **Port capacity**: `NetscriptDefinitions.d.ts` confirms ports have a capacity (`full()`, bump-off on write) but not the number — worth an in-game check (`ns.getPortHandle(n).full()` after writing several items) before assuming `PORT_RESP` traffic can never overflow under heavy concurrent-caller load. Not a blocker for a first version with one or two callers.
 - **`refresh()` running every cycle** (per the `refreshInterval: 5ms` decision above) blocks the request-servicing loop for the duration of a full network scan, every single cycle — not just occasionally. Accepted trade-off given the no-timeout decision, but worth eyeballing the actual scan duration once running in a large network, in case it visibly stalls request-servicing under real conditions.
+
+## Related horizon item
+
+Batcher (classic synced HWGW — weaken1/grow/weaken2/hack land in a fixed
+offset sequence): not yet designed. Open question when it's picked up:
+whether a batch's 4 sub-jobs need one atomic multi-job request type (all 4
+succeed or none do) so another caller can't consume RAM mid-batch, or
+whether single-job requests are enough and the batcher handles
+partial-failure cleanup itself.
 
 ## Implementation Checklist
 

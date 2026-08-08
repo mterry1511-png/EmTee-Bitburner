@@ -62,7 +62,7 @@ All game code lives under `servers/home/`. `docs/memory.md` used to hold this fi
 - Filesystem MCP is available at `C:\!Coding\BitBurner\Projects\bb-external-editor-main\servers\home\`.
 
 ## Scheduler (in progress)
-Replaces `dispatch.js` entirely. A centralized daemon that owns all `ns.exec` calls for scheduled work — callers request threads via ports, the scheduler allocates and launches directly, never handing thread counts back to the caller to exec themselves (this is what prevents the RAM-consumed-between-check-and-launch race). Full design (ports, allocation algorithm, counters, filler processes, failure logging) lives in [servers/home/scheduler/CLAUDE.md](servers/home/scheduler/CLAUDE.md).
+Replaces `dispatch.js` entirely. A centralized daemon that owns all `ns.exec` calls for scheduled work — callers request threads via ports, the scheduler allocates and launches directly, never handing thread counts back to the caller to exec themselves (this is what prevents the RAM-consumed-between-check-and-launch race). Full design and implementation plan (ports, allocation algorithm, counters, filler processes, failure logging, file structure, checklist) lives in [docs/scheduler-plan.md](docs/scheduler-plan.md) — a deliberate, permanent exception to the "notes belong in CLAUDE.md" rule (see that file's header note), since `servers/home/scheduler/CLAUDE.md` drifted stale and was deleted in favor of it.
 
 ## On the Horizon
 - ~~Dispatch v2: kill all existing deployers, sort cloud servers by available RAM, assign ranked targets by index zipping.~~ Superseded by the scheduler above.
@@ -70,7 +70,7 @@ Replaces `dispatch.js` entirely. A centralized daemon that owns all `ns.exec` ca
 - Extract the confirm-then-act prompt pattern from the file-removal script into `confirmAction` as well (already done for `nukeclouds.js`).
 - Add home RAM upgrade support to cloud watcher once Singularity (SF4) is unlocked.
 
-Planned work on the cfg.json restructure lives in [servers/home/cfg/CLAUDE.md](servers/home/cfg/CLAUDE.md); the stockmarket.js logic outline lives in [servers/home/stocks/CLAUDE.md](servers/home/stocks/CLAUDE.md); the scheduler design (and the not-yet-designed Batcher that builds on it) lives in [servers/home/scheduler/CLAUDE.md](servers/home/scheduler/CLAUDE.md).
+Planned work on the cfg.json restructure lives in [servers/home/cfg/CLAUDE.md](servers/home/cfg/CLAUDE.md); the stockmarket.js logic outline lives in [servers/home/stocks/CLAUDE.md](servers/home/stocks/CLAUDE.md); the scheduler design and implementation plan (and the not-yet-designed Batcher that builds on it) lives in [docs/scheduler-plan.md](docs/scheduler-plan.md).
 
 [docs/review-findings.md](docs/review-findings.md) holds the code issues turned up by the project-wide JSDoc/comment pass — bugs, shadowed variables, dead code, DRY violations and leftover build artifacts that were logged but deliberately *not* fixed, since that pass was comments-only. **This is a transient work queue, not project state** — it's a deliberate exception to the "notes belong in CLAUDE.md, not `docs/`" rule above, made because 45 files' worth of findings would bury this file. Work through it, then delete it; anything worth keeping gets promoted into CLAUDE.md proper rather than living on in `docs/`.
 
