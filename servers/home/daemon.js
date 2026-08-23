@@ -3,6 +3,7 @@ import { main as upgradeClouds } from "./cloud/upgradeclouds.js";
 import { ensureRunning } from "./lib/util.js";
 import * as buyHacknetNodes from "./watch/buyhacknetnodes.js";
 import { main as buyPrograms } from "./watch/buyprograms.js";
+import { main as buyUpgrades } from "./watch/buyupgrades.js";
 import { main as autoAscend } from "./gang/autoascend.js";
 
 /**

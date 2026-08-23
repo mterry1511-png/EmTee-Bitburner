@@ -137,16 +137,14 @@ export async function main(ns) {
             }
 
             // Dispatch then wait - stagger launches so deployers don't all wake up and start
-            // reserving RAM simultaneously. deployer.js sleeps 1000ms on startup before it
-            // begins allocating, so the 3500ms here leaves a ~2500ms buffer for it to resolve
-            // its target and get its first phase in flight before the next deployer starts.
+            // reserving RAM simultaneously.
             //
             // Args: (script, host, threads, scriptHost, targetMode, target). "best" is passed
             // as targetMode but is IGNORED by the deployer, because an explicit `target` is
             // also supplied and an explicit target always wins over mode resolution.
             ns.exec("deployer.js", scriptHost, 1, scriptHost, "best", target);
             launched++;
-            await ns.sleep(3500);
+            await ns.sleep(500);
         }
 
         // report success

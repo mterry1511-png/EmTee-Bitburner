@@ -47,7 +47,7 @@ export async function main(ns) {
     ns.ui.setTailMinimized(true);   // true: min, false: max
     ns.ui.moveTail(1420, 450);
 
-    await ns.sleep(1000);               // allows dispatch to end and frees up RAM
+    await ns.sleep(100);               // allows dispatch to end and frees up RAM
     await start(ns, scriptHost, targetMode, target);
 }
 
@@ -203,7 +203,8 @@ export async function start(ns, scriptHost, targetMode, target = null) {
             queue = Math.max(0, stillNeeded - runningThreads);
         } else if (phase === GROW) {
             const safeMoney = Math.max(currentMoney, 1);
-            const growMultiplier = (maxMoney * cfg.moneyThresh) / safeMoney;
+            let growMultiplier = (maxMoney * cfg.moneyThresh) / safeMoney;
+            if (growMultiplier <= 1) {growMultiplier = 1}       //growthanalyze needs min 1
             const stillNeeded = Math.ceil(ns.growthAnalyze(target, growMultiplier));
             queue = Math.max(0, stillNeeded - runningThreads);
         } else if (phase === HACK) {
