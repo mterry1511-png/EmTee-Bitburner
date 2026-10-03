@@ -82,11 +82,8 @@ export function getTarget(ns, mode) {
 
         case "hacklvl": {
             // Call mode specific function
-            const targets = getBestHackLvlTarget(ns);
-            // BUG: getBestHackLvlTarget returns a single object, not an array,
-            // so targets[0] is undefined and target.hostname throws. This is the
-            // "DOESNT WORK YET" noted on that function.
-            const target = targets[0];
+            // Unlike getBestMoney, this returns a single object, not an array.
+            const target = getBestHackLvlTarget(ns);
             // print function
             printTarget(ns, target.hostname, mode, target.moneyPerSec);
             // Warn (but don't stop) if the chosen target isn't rooted yet
@@ -177,8 +174,6 @@ function printTarget(ns, target, mode, moneyPerSec) {
 
 // Returns the server we have root access to with the highest required hacking
 // level, among those that pass the cfg.json target requirements.
-// DOESNT WORK YET - it returns a single object, but getTarget's "hacklvl" case
-// indexes the result as if it were an array. See the note there.
 /**
  * Find the highest-hacking-level target that satisfies the configured thresholds.
  *

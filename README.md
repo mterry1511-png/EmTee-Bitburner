@@ -1,24 +1,14 @@
-EmTee's Bitburner v1.x
+# EmTee's Bitburner
 
-Next steps:
-- add money rounding import function - $1k, $1mil, $1bil etc
+A modular automation system for [Bitburner](https://github.com/bitburner-official/bitburner-src),
+written in JavaScript as a vehicle for learning JS fundamentals alongside game progression.
 
-In progress:
-- Scheduler (see servers/home/scheduler/CLAUDE.md)
-  - use all servers in the scheduler and cloudpush to all (conserver space on server by launching infrequently?
-)
+- Game scripts live in `servers/home/` and sync to the game over the Remote File API
+  (esbuild + `bb-external-editor`, port 12525). See `bbi-external-editor-README.md` for build setup.
+- Work in progress and planned work: [TODO.md](TODO.md)
+- Design and reference docs: [docs/](docs/)
 
-Future:
-- Dashboard for cloud servers status?????
-- BIG batching hack code (Batcher, builds on the scheduler)
-- Stock market code
-
- (Requires singularity):
-- autoascend
-- backdoor everything - make list of priority servers
-- autojoin factions
-
-
+```text
                  ``          
              -odmmNmds:      
            `hNmo:..-omNh.    
@@ -47,10 +37,11 @@ Future:
     sNNo-.`.-omNy`           
      -smNNNNmdo-             
         `..`                 
-
-
+```
 
 NiteSec
+
+```text
                   __..__               
                 _.nITESECNIt.            
              .-'NITESECNITESEc.          
@@ -86,4 +77,4 @@ NiteSec
         d      .dNITESEC          $   |  
        :bp.__.gNITESEC/$         :$   ;  
        NITESECNITESECNIT         /$b :   
-
+```

@@ -22,14 +22,21 @@ export async function main(ns) {
     const oldName = ns.args[0];
     const newName = ns.args[1];
 
-    if (oldName == "help" || newName == "help" || !oldName || !newName) {
+    if (oldName === "help" || newName === "help" || !oldName || !newName) {
         printusage(ns);
         return;
     }
 
     // stop everything on the server before the hostname changes underneath it
-    killAll(ns,oldName);
-    ns.cloud.renameServer(oldName, newName);
+    await killAll(ns, oldName);
+
+    // renameServer returns false (it doesn't throw) on failure - e.g. a typo'd oldName
+    // or a newName that's already taken. Bail before touching the registry, otherwise
+    // clouds.json would list a host that doesn't exist and lose the one that does.
+    if (!ns.cloud.renameServer(oldName, newName)) {
+        ns.tprint("ERROR: could not rename " + oldName + " to " + newName + " - does " + oldName + " exist, and is " + newName + " free? clouds.json left unchanged.");
+        return;
+    }
 
     // update json - move the entry to the new key, preserving its maxRam
     const clouds = JSON.parse(ns.read("/data/clouds.json"));

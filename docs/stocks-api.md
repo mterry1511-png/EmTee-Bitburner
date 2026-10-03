@@ -1,3 +1,7 @@
+# Stock market API reference
+
+Reference for `stocks/stockmarket.js` (logic outline: `servers/home/stocks/CLAUDE.md`).
+
 **What symbols are**
 
 `ns.stock.getSymbols()` returns an array of ticker strings — one per tradable company on the WSE (33 of them, e.g. `"FSIG"`, `"ECP"`, `"OMTK"`). Each one is a stable identifier for a stock, and several of them correspond to an actual hackable server in the game world (e.g. hacking `foodnstuff` nudges the `FNS` stock's second-order forecast) — though that link doesn't matter for a threshold-trading script, only for the hack-to-influence-stocks trick, which is out of scope here. Every other `ns.stock` function takes one of these symbols as its first argument.
@@ -35,7 +39,7 @@
 *Not in the stock namespace, but needed:*
 - `ns.getPlayer().money` — current cash, for sizing and reserve-floor checks
 
-**Functions you'll be writing yourself (in `lib/stocks.js`, per the split we discussed)**
+**Functions you'll be writing yourself (in `lib/stocks.js`)**
 
 | Function | Description |
 |---|---|
@@ -45,5 +49,3 @@
 | `shouldBuyLong(forecast, volatility, cfg): boolean` | True if forecast above buy-long threshold and volatility under ceiling |
 | `shouldBuyShort(forecast, volatility, cfg): boolean` | Mirror of above for shorts |
 | `sizePosition(sym, availableCash, price, maxShares, cfg): number` | Returns share count to buy given sizing mode and remaining budget |
-
-That's the full surface. Want to sketch the actual tick loop next, or lock down the `cfg.stockmarket` shape (thresholds, reserve cash, sizing mode) first since several of those lib functions take `cfg` directly?

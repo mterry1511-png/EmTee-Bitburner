@@ -1,15 +1,7 @@
 # scheduler.js Implementation Plan
 
-> This is the authoritative scheduler doc — `servers/home/scheduler/CLAUDE.md`
-> used to hold a higher-level design summary but had drifted stale (it still
-> described array-based `fillerPids`, an unbounded failure log, and a
-> separate "reserved" RAM concept, all superseded by the decisions below) and
-> was deleted in favor of this file. This is a deliberate, permanent
-> exception to the root CLAUDE.md's "notes belong in CLAUDE.md, not `docs/`"
-> rule — same rationale as `docs/review-findings.md` (code-level detail and
-> scaffolding here would bury a CLAUDE.md file meant to stay prose-level),
-> except this one isn't transient: it stays put as the scheduler's
-> implementation reference rather than getting worked through and deleted.
+> The authoritative scheduler design doc. (`servers/home/scheduler/CLAUDE.md` used to hold a
+> higher-level summary but drifted stale and was deleted in favor of this file.)
 
 ## Context
 
@@ -17,7 +9,7 @@
 
 This is a learning-project build the user is writing by hand — this document is the reference scaffold, not code to paste in.
 
-The core design (ports, message shapes, worst-fit bin-packing, filler concept, state.json counters, failure logging) was already agreed in `CLAUDE.md`'s existing "Scheduler (in progress)" section; this plan formalizes it against the real codebase and resolves the remaining open decisions.
+The core design (ports, message shapes, worst-fit bin-packing, filler concept, state.json counters, failure logging) was agreed in earlier sessions; this plan formalizes it against the real codebase and resolves the remaining open decisions.
 
 ## Decisions made this session
 
@@ -292,7 +284,7 @@ partial-failure cleanup itself.
 ### Setup & Config
 
 - [ ] Add `"scheduler": { "fillerScript": "lib/share.js" }` to `data/defaultcfg.json`
-- [ ] Rename `refreshSleep` → `refreshInterval` in `data/defaultcfg.json` (value stays `5`)
+- [x] Rename `refreshSleep` → `refreshInterval` in `data/defaultcfg.json` (value stays `5`)
 - [ ] Update `cfg/cfgall.js` (or relevant cfg editor) to include the new scheduler cfg key (manual-update convention)
 
 ### lib/ports.js

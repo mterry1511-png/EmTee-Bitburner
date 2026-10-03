@@ -1,6 +1,6 @@
 // ============================================================================
 // stockTrader5.js — THIRD-PARTY / COMMUNITY SCRIPT. Not written to this
-// project's conventions and deliberately left as found.
+// project's conventions and deliberately left as found. NOT WORKING
 //
 // RELATIONSHIP TO stockmarket.js: this is the script that actually trades
 // today. stocks/stockmarket.js is the purpose-built replacement being written

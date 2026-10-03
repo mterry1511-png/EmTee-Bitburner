@@ -1,11 +1,11 @@
 # Review Findings — project-wide JSDoc/comment pass
 
-Code issues found during the JSDoc/comment pass of 2026-07-26. **Nothing here has been
-fixed** — that pass was deliberately comments-only, so every item below is still live in
-the code.
+Code issues found during the JSDoc/comment pass of 2026-07-26. That pass was deliberately
+comments-only; fixes have landed since. Items marked **RESOLVED** are fixed and kept only for
+reference. Everything else is still live in the code.
 
 This is a work queue, not project state. Work through it, delete it, and promote anything
-durable into `CLAUDE.md`.
+durable into `CLAUDE.md`. The decision of which findings to fix lives in `TODO.md`.
 
 **Line numbers shifted during the pass**, because adding JSDoc blocks pushes code down.
 Numbers below are post-pass where verified, but treat them as approximate.
@@ -15,20 +15,25 @@ Status key:
 - **REPORTED** — raised by a review agent, not yet independently checked.
 - **STALE** — code has changed since the finding was logged; no longer applies as written.
 - **AMBIGUOUS** — needs a judgment call or an in-game test, not more code-reading.
+- **RESOLVED** — fixed in code; entry kept for reference until this file is deleted.
 
 **Verification pass (2026-08-07):** a read-only agent re-checked every remaining REPORTED
 item (excluding the four already-fixed items noted under Orchestration below) against
 current code. Result: ~78 CONFIRMED, 4 STALE, 0 false-positives, 3 AMBIGUOUS. All are
-annotated in place below. Scope for actually fixing this list is not yet decided — deferred
-by the user on 2026-08-07 pending a prioritization pass (crash/hang-only vs.
-crash+corruption vs. everything).
+annotated in place below. Where an item carries no explicit tag, that pass reported it
+CONFIRMED. Scope for actually fixing this list is not yet decided (see `TODO.md`).
+
+**Status refresh (2026-10-03):** the `cfg/` section was re-checked line by line against
+current code (it still carried pre-verification REPORTED tags), and the four bugs fixed on
+2026-08-01 are now marked RESOLVED.
 
 ---
 
 ## cfg/ — the interactive config editors
 
-### 1. `lib/util.js:224` — a dismissed boolean dialog writes `false` instead of skipping
-**CONFIRMED. Highest-impact item in this batch.**
+### ~~1. `lib/util.js:224` — a dismissed boolean dialog writes `false` instead of skipping~~
+**RESOLVED (2026-08-01).** `promptField` now renders boolean fields as a select with
+"Yes" / "No" / "Skip (leave unchanged)", so skipping is expressible. Original text below.
 
 `promptField` returns `ns.prompt`'s result directly for `type: "boolean"`:
 
@@ -51,8 +56,9 @@ Root cause lives in `lib/util.js`, so the fix is one place for all five editors.
 **Suggested fix:** make "leave unchanged" expressible. Render boolean fields as
 `{type: "select", choices: ["true", "false", "skip"]}` rather than a raw boolean dialog.
 
-### 2. `cfg.js:64` — `ns.run(script, 1)` runs with `script === undefined` on a cancelled prompt
-**CONFIRMED.**
+### ~~2. `cfg.js:67` — `ns.run(script, 1)` runs with `script === undefined` on a cancelled prompt~~
+**RESOLVED (2026-10-03).** The switch now has a `default:` case that returns, printing the valid
+categories when an unrecognised argument was given. Original text below.
 
 A cancelled select-prompt resolves to `false`, which matches no `case` in the switch, so
 `script` is never assigned. Execution falls through to `ns.run(undefined, 1)` regardless — a
@@ -61,8 +67,9 @@ runtime error for an ordinary "changed my mind". Same path for any unrecognised 
 **Suggested fix:** `if (!script) return;` before the `ns.run`, or a `default:` case that
 prints the valid choices and returns.
 
-### 3. `cfg/*.js` (all five prompt editors) — the prompt-and-write loop is copy-pasted five times
-**REPORTED.** DRY violation.
+### 3. `cfg/*.js` (all six prompt editors) — the prompt-and-write loop is copy-pasted six times
+**CONFIRMED (2026-10-03).** DRY violation. Now six copies: `cfg/cfggang.js` has been added
+since the finding was logged, following the same pattern.
 
 Byte-identical in each editor:
 `for (const field of fields) { getByPath ×2; promptField; if undefined continue; jsonEdit }`
@@ -76,34 +83,41 @@ that finding #1 is exactly such a change.
 collapses to an import, a `fields` array, and one call.
 
 ### 4. `cfg/cfgall.js` — "all" is misleading; it covers only numeric fields
-**REPORTED.**
+**CONFIRMED (2026-10-03).**
 
-Missing from the "all" editor: all four booleans, `refreshInterval`, `watchedScripts`, and the
-entire `gangCfg` block.
+Missing from the "all" editor: every boolean, `refreshInterval`, `watchedScripts`, and the
+entire `gangCfg` block. (`gangCfg` does now have its own editor, `cfg/cfggang.js`, but "all"
+still skips it.)
 
 **Suggested fix:** either genuinely include everything (trivial once field groups are shared per
 finding #3), or rename it honestly.
 
 ### 5. `cfgall.js` vs `cfgcloud.js` / `cfgtarget.js` — duplicated descriptors with drifting labels
-**REPORTED.**
+**CONFIRMED (2026-10-03).**
 
 Same config keys, different wording depending on which menu entry you came in through:
 "Max Percent Spend" vs "Max % Spend", "Min Cloud RAM (GB)" vs "Min Cloud RAM". The user is asked
 a differently-worded question for the same setting.
 
+The drift has also reached validation: `cfgcloud.js` restricts `purchaseConfig.minCloudRam` to a
+power-of-2 `select`, but `cfgall.js` prompts it as a free `number`, so the "all" path can write a
+RAM size the game won't accept.
+
 **Suggested fix:** a `cfg/fields.js` exporting named field groups; `cfgall` becomes their
 concatenation. Fixes #4 at the same time.
 
-### 6. `cfg/cfgcloud.js`, `cfg/cfgtarget.js` — no `"default"` arg support, unlike their three siblings
-**REPORTED.** `run cfg/cfgcloud.js default` silently prompts anyway instead of resetting.
-Falls out for free from the #3 extraction.
+### 6. `cfg/cfgcloud.js`, `cfg/cfgtarget.js` — no `"default"` arg support, unlike their siblings
+**CONFIRMED (2026-10-03).** `run cfg/cfgcloud.js default` silently prompts anyway instead of resetting.
+Falls out for free from the #3 extraction. Note the decision recorded in `TODO.md`: `"default"`
+should become a full `cfg.json` reset (`resetCfgToDefaults`), not a per-editor one.
 
-### 7. `cfg/cfgtoggle.js:17` — label `"Deploy to home? Bool"` leaks the type into the UI
-**REPORTED.** Leftover from when booleans went through a text box. Redundant now that
-`promptField` renders a real Yes/No dialog.
+### 7. `cfg/cfgtoggle.js:35` — label `"Deploy to home? Bool"` leaks the type into the UI
+**CONFIRMED (2026-10-03).** Leftover from when booleans went through a text box. Redundant now that
+`promptField` renders a Yes/No/Skip select.
 
-### 8. `data/defaultcfg.json:33` — key misspelled `englableBuyAugs` (should be `enableBuyAugs`)
-**CONFIRMED, but latent — not currently breaking anything.**
+### ~~8. `data/defaultcfg.json:33` — key misspelled `englableBuyAugs` (should be `enableBuyAugs`)~~
+**RESOLVED.** `defaultcfg.json` now has `enableBuyAugs`, and `cfg/cfggang.js` exposes it. The
+misspelled key may still linger in the live in-game `cfg.json` (see below). Original text below.
 
 The typo is real. However, **no script currently reads either spelling** — a grep across all of
 `servers/home` for `enableBuyAugs|englableBuyAugs` returns only the `defaultcfg.json` line itself.
@@ -116,14 +130,16 @@ Invisible from the UI, since no cfg editor exposes `gangCfg` at all (see #4).
 **Suggested fix:** rename in `defaultcfg.json` now, before a consumer exists. Note the misspelled
 key will linger in the live in-game `cfg.json` afterwards — `jsonEdit` only writes, never prunes.
 
-### 9. `cfg.js:11` and `cfg.js:32` — the seven-element choice list is duplicated verbatim
-**CONFIRMED.** Present in `autocomplete`, again in the `ns.prompt` call, with the switch as a
+### 9. `cfg.js:11` and `cfg.js:32` — the eight-element choice list is duplicated verbatim
+**PARTLY RESOLVED (2026-10-03).** One module-level `categories` array now feeds `autocomplete`,
+the prompt, and the `default:` error message. The switch is still a separate mapping that has to
+be kept in step. Present in `autocomplete`, again in the `ns.prompt` call, with the switch as a
 third place that must be kept in step. The JSDoc now warns about this, but a comment is not a fix.
 
 **Suggested fix:** one module-level `{choice: script}` map that all three read from.
 
 ### 10. `cfg/cfgdefaults.js` — reset never removes keys that have left `defaultcfg.json`
-**REPORTED. Working as designed — logged as a known limit, not a bug.**
+**CONFIRMED (2026-10-03). Working as designed — logged as a known limit, not a bug.**
 
 `cfgdefaults` is write-only by construction, so a renamed or dropped key persists in `cfg.json`
 forever. This is precisely what protects `lastAugReset` from being wiped, so it should probably
@@ -138,12 +154,15 @@ files are byte-identical to `HEAD` once comments and blank lines are stripped.
 
 ### `lib/targeting.js`
 
-- **`:130` — "hacklvl" mode throws.** CONFIRMED by agent. `getBestHackLvlTarget` returns a single
+- ~~**`:130` — "hacklvl" mode throws.**~~ **RESOLVED (2026-10-03)** — the case now uses
+  `getBestHackLvlTarget`'s single-object return directly. CONFIRMED by agent. `getBestHackLvlTarget` returns a single
   object, but the case does `const targets = getBestHackLvlTarget(ns); const target = targets[0];`.
   `targets[0]` is `undefined`, so `target.hostname` throws. This is the "DOESNT WORK YET" already
   noted above the function. *Fix:* drop the `[0]`, or return `[bestTarget]` so both helpers share
   a shape.
-- **`:44, :113` — empty-result path throws.** `getBestMoney` deliberately returns `[]` when nothing
+- **`:44, :113` — empty-result path throws.** *(Left as-is 2026-10-03: only `hackexp.js` calls
+  "best", and only when nothing at all passes the cfg filters. Not worth hardening for a
+  single-user tool.)* `getBestMoney` deliberately returns `[]` when nothing
   qualifies, but `"best"` and `default` both do `targets[0].hostname` unguarded. The one branch
   that handles it gracefully (`"ranked"`) is the one that doesn't need to.
 - **`:202`, `~:285` — `scanNetwork` is async and never awaited.** Both helpers call it bare then
@@ -185,7 +204,9 @@ files are byte-identical to `HEAD` once comments and blank lines are stripped.
   corrected the doc, not the code. `scanner.js` seeds its BFS with `home` and pushes it into
   `networks.json`; home has `hasAdminRights === true`, `purchasedByPlayer === false`, so it passes
   the filter into `rooted.json`. **Scheduler-relevant:** the spec gives home a different RAM ceiling
-  than clouds, so uniform iteration over `rooted.json` would give home cloud treatment.
+  than clouds, so uniform iteration over `rooted.json` would give home cloud treatment. It also
+  means `docs/scheduler-plan.md`'s candidate list `["home", ...rooted.json]` counts home twice
+  (tracked in `TODO.md`).
 - **`~:160` — `getAvailableThreads` subtracts `leaveRamFree` on every host, not just home.**
   Conflicts with the scheduler spec (`total - reserved`, no reserve on clouds). Can also return a
   negative thread count on a small cloud; nothing clamps at 0.
@@ -224,7 +245,10 @@ has no trailing newline.
 20 blocks rewritten, 0 added. Agent verified only comment text changed, and all ten files pass
 `node --check`.
 
-### `scanner.js:80-90` — the BFS marks `visited` on dequeue, not enqueue, so `networks.json` contains duplicates
+### ~~`scanner.js:80-90` — the BFS marks `visited` on dequeue, not enqueue, so `networks.json` contains duplicates~~
+
+**RESOLVED (2026-08-01).** `visited.add(neighbor)` now runs at the enqueue site
+(`scanner.js:111`). Original text below.
 
 **Most important finding in this batch.** `visited.add(currentServer)` runs after `queue.shift()`,
 while the enqueue guard is `if (!visited.has(neighbor)) queue.push(neighbor)`. Any server reachable
@@ -240,7 +264,10 @@ look like a scheduler bug.
 
 ### `cloud/upgradeclouds.js`
 
-- **`:41-52` — infinite tight loop with no `await` when the name pool is exhausted.** If
+- **`:41-52` — infinite tight loop with no `await` when the name pool is exhausted.**
+  *(Not reachable in practice, checked 2026-10-03: `cloudNamePresets` holds 93 unique names and the
+  game caps cloud servers at 25, so `minBuy` fails and breaks the loop long before the pool runs
+  out. Left as-is.)* If
   `targetCloudServs` exceeds the number of unique names in `cloudNamePresets`, every iteration hits
   `continue`, neither condition can change, and there is no `await` on that path. Bitburner spins
   forever and starves the game loop — and `daemon.js` awaits this every tick, so the daemon hangs
@@ -277,22 +304,26 @@ look like a scheduler bug.
 
 ### `cloud/renamecloud.js`
 
-- **`:18, 22` — `renameServer` return ignored, then the registry is corrupted on failure.**
+- ~~**`:18, 22` — `renameServer` return ignored, then the registry is corrupted on failure.**~~
+  **RESOLVED (2026-10-03)** — a failed rename now bails before the registry is touched.
   Returns `false` on failure; discarded. `clouds[newName] = clouds[oldName]; delete clouds[oldName];`
   runs unconditionally. Two failure modes: (1) rename fails but registry updates → `clouds.json`
   lists a phantom host and loses the real one, which `daemon.js`/`killall.js`/`upgradeclouds.js` then
   act on; (2) `oldName` absent → value is `undefined`, which `JSON.stringify` **drops silently**, so
   the entry vanishes and `upgradeclouds.js:64` then reads `clouds[cloud].maxRam`. Success message
   prints either way.
-- **`:17` — `killAll` not awaited before the rename.** Safe only because the body happens to be
+- ~~**`:17` — `killAll` not awaited before the rename.**~~ **RESOLVED (2026-10-03)** — now awaited. Safe only because the body happens to be
   synchronous. The message "All processes stopped on …" asserts an ordering the code doesn't enforce.
-- **No rescan after rename** — `networks.json` still lists the old hostname, so `rooted.json` (and
+- **No rescan after rename** *(left as-is 2026-10-03: `daemon.js` runs `refresh.js` every tick, so
+  this self-heals within one tick)* — `networks.json` still lists the old hostname, so `rooted.json` (and
   the scheduler) target a host that no longer exists.
 - `:12` `==`; `:37` `printusage` exported but never imported, unlike every other one in the batch.
 
 ### `cloud/nukeclouds.js`
 
-- **`:47` — `deleteServer` silently fails on any cloud with scripts still running.** Per
+- ~~**`:47` — `deleteServer` silently fails on any cloud with scripts still running.**~~
+  **RESOLVED (2026-10-03)** — each cloud is `ns.killall`'d immediately before its delete, and the
+  result is checked ("ERROR: could not delete" instead of a false "Deleted"). Per
   `NetscriptDefinitions.d.ts` it will not delete a server with running scripts; returns `false`,
   doesn't throw. Killing `daemon.js` stops new dispatch and its `atExit` kills what *it* spawned —
   but not deployers, the scheduler, or manually-launched scripts. Those servers survive while the
@@ -300,6 +331,9 @@ look like a scheduler bug.
   everything was deleted while the registry disagrees. *Fix:* `killAll(ns, cloud)` before each
   delete, and branch on the return value.
 - **`:17` — `ns.getRunningScript("/daemon.js", "home")` may not match. HYPOTHESIS, not confirmed.**
+  *(Lower stakes since 2026-10-03: the killall + delete pair now runs with no `await` between, so even
+  a surviving daemon can't relaunch anything onto a server before it's deleted. Still worth the
+  one-line in-game test.)*
   The project's own rule is that `ns.isRunning` needs the exact exec'd path. `daemon.js:63` itself
   checks `ns.isRunning("scheduler.js", "home")` with no leading slash. If normalisation doesn't strip
   the `/`, the daemon is never killed and races the `clouds.json` writes — the exact thing the block
@@ -319,12 +353,14 @@ look like a scheduler bug.
 ### `killall.js` / `removeall.js`
 
 - **`killall.js:33` — bare `run killall.js` takes down the daemon with no confirmation and no
-  restart.** `safetyGuard` correctly protects the script from its own `ns.killall("home")`, but a
+  restart.** *(Left as-is 2026-10-03: that's what a stop-everything button is for, and it's only
+  ever run deliberately.)* `safetyGuard` correctly protects the script from its own `ns.killall("home")`, but a
   no-arg invocation silently kills `daemon.js` and the scheduler, and unlike `nukeclouds.js` nothing
   relaunches them. *Fix:* route the no-target branch through `confirmAction`.
-- **`killall.js:27` — no try/catch on the `clouds.json` read**, unlike `nukeclouds.js:29` and
+- **`killall.js:27` — no try/catch on the `clouds.json` read** *(left as-is 2026-10-03: the file
+  always exists once `init.js` has run)*, unlike `nukeclouds.js:29` and
   `upgradeclouds.js:17`. `JSON.parse("")` throws on a missing file, and `home` then never gets killed.
-- **`removeall.js:8` — bespoke `ns.prompt` instead of `confirmAction`.** `CLAUDE.md` lists this exact
+- **`removeall.js:8` — bespoke `ns.prompt` instead of `confirmAction`.** `TODO.md` lists this exact
   extraction as outstanding; this is the last remaining copy now that `nukeclouds.js` is migrated.
 - **`removeall.js:15-17` — `ns.rm`'s return value discarded, so failures report as success.** Run on
   `home` it will fail to remove at least `removeall.js` itself. Consider refusing outright when
@@ -390,10 +426,9 @@ uses a third form, `"data/..."`). No try/catch on the read.
 
 11 JSDoc blocks added, 12 rewritten. Agent verified zero executable code changed.
 
-> **`CLAUDE.md` line 14 is stale.** `go.js` no longer holds the two HGW config profiles — it was
-> rewritten into a numbered task launcher (kill buyrep/hackexp on clouds; start buyrep; start
-> hackexp). The HGW thresholds now live in `cfg.json` (`moneyThresh`, `securityThresh`,
-> `targetHackFraction`) and are consumed by `deployer.js`. Fix `CLAUDE.md` when convenient.
+> ~~**`CLAUDE.md` line 14 is stale.**~~ **RESOLVED (2026-10-03)** — CLAUDE.md now describes
+> `go.js` as a numbered task launcher and the HGW thresholds as `cfg.json` keys consumed by
+> `deployer.js`.
 
 ### ~~`deployer.js:~150` — WEAKEN's `queue` is never decremented, so the weaken phase can never end~~ RESOLVED
 
@@ -403,7 +438,12 @@ run every tick alongside the other two. All three phases now obey the same rule,
 self-corrects if something else raises security mid-phase instead of trusting a stale
 phase-entry estimate.
 
-### `init.js:~68` — `cfg.lastAugReset` is NEVER written, so the bootstrap fires on every run
+### ~~`init.js:~68` — `cfg.lastAugReset` is NEVER written, so the bootstrap fires on every run~~
+
+**RESOLVED (2026-08-01).** `jsonEdit(ns, "lastAugReset", ...)` now runs at the end of the
+post-reset bootstrap (`init.js:86`). Separately, and deliberately, `init.js` now resets
+`cfg.json` to defaults on *every* run regardless of aug-reset status, so "re-running discards
+config tuning" below is now intended behavior rather than a bug. Original text below.
 
 The only `jsonEdit(ns, "lastAugReset", ...)` in the codebase is inside a commented-out draft block
 (agent grepped all of `servers/home`). `cfgdefaults.js` deliberately skips the key and it's absent
@@ -555,7 +595,8 @@ that self-execs as its own worker, and it will run today. The real SF4 placehold
   `stocks/CLAUDE.md`, and `daemon.js:102` already has its `ensureRunning` call written and
   commented out. So the repo holds an undocumented working script and a documented broken one.
   *Fix:* finish `stockmarket.js`, then delete `stockTrader5.js` or move it to `old/`.
-- **`stockmarket.js:21` — two faults on one line.** `symbols = ns.stock.getSymbols();` sits after
+- **`stockmarket.js:21` — two faults on one line.** *(Left as-is 2026-10-03: the file is an
+  unfinished stub that nothing launches, and it gets rewritten when the stock work starts.)* `symbols = ns.stock.getSymbols();` sits after
   a `while (cfg.autoStocks == true)` loop with no `break` and **no `await`**. If `autoStocks` is
   true: tight infinite loop, starves the game, line unreachable. If false: loop skipped and this
   assigns to an **undeclared variable** → `ReferenceError` under module strict mode. Both branches
@@ -573,6 +614,8 @@ that self-execs as its own worker, and it will run today. The real SF4 placehold
   `decimalPlaces` and the `"0." + "0".repeat(...)` construction are dead, the `e+0` scientific
   fallback is unreachable, and the recursive path emits a `$` mid-string.
 - **`stockTrader5.js:35,121,122,127,140` — `ns.nFormat` is removed from current Bitburner.**
+  *(Confirmed 2026-10-03: `NetscriptDefinitions.d.ts` has no `nFormat`, so this script throws on its
+  first format call. The "trades today" claim above is therefore false on the current build.)*
   Replaced by `ns.formatNumber`/`ns.formatPercent`. On a current build every one of these throws.
   *Fix:* switch to `lib/format.js`; that deletes `format`, `formatReallyBigNumber`, `extraFormats`,
   `extraNotations` and `decimalPlaces` outright.
@@ -588,7 +631,8 @@ that self-execs as its own worker, and it will run today. The real SF4 placehold
 
 ### `corp/boostmaterials.js`
 
-- **`:36` — `warehouse.sizedAt` is not a real property; the script cannot work.** The `Warehouse`
+- ~~**`:36` — `warehouse.sizedAt` is not a real property; the script cannot work.**~~
+  **RESOLVED (2026-10-03)** — now `warehouse.size - warehouse.sizeUsed`. The `Warehouse`
   interface exposes `size` and `sizeUsed`. `sizedAt` is `undefined` → `availableSpace` is `NaN` →
   `cappedBudget` `NaN` → `chunkBudget` `NaN` → `remaining < chunkBudget` is `false` (break never
   fires) → `qty` is `NaN` → `qty <= 0` is `false` → reaches `bulkPurchase(..., NaN)`. Blocking bug.

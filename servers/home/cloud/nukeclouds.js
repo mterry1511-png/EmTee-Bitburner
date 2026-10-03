@@ -18,8 +18,11 @@ import { confirmAction } from "../lib/util.js";
  *   5. Rescan again so clouds.json (and networks.json) end up empty of clouds.
  *   6. Relaunch daemon.js.
  *
- * Note ns.cloud.deleteServer refuses to delete a server that still has scripts
- * running on it - see the findings notes.
+ * ns.cloud.deleteServer refuses to delete a server that still has scripts running
+ * on it (returning false, not throwing), and killing daemon.js doesn't stop every
+ * script on the clouds - only the watched ones its atExit hook knows about. So each
+ * server is killall'd immediately before its delete. There's no await between the
+ * two calls, so nothing else can run and relaunch a script onto it in between.
  * @param {NS} ns - The Netscript API object
  * @returns {Promise<void>}
  */
@@ -65,8 +68,12 @@ export async function main(ns) {
 
     // delete all - for...in over the registry object gives us the hostnames (keys)
     for (const cloud in clouds) {
-        ns.cloud.deleteServer(cloud);
-        ns.tprint("Deleted " + cloud);
+        ns.killall(cloud);
+        if (ns.cloud.deleteServer(cloud)) {
+            ns.tprint("Deleted " + cloud);
+        } else {
+            ns.tprint("ERROR: could not delete " + cloud);
+        }
     }
 
     // rescan so both data files stop listing the servers we just destroyed

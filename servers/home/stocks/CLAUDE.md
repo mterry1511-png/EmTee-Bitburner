@@ -14,3 +14,5 @@ Assuming full access (WSE, TIX, 4S TIX API) and shorting unlocked:
 4. **Buy pass** — walk the ranked list; for each candidate decide direction (long if forecast above buy-long threshold, short if below buy-short threshold), compute allocation (fixed-per-stock or proportional-capped, whichever sizing mode is chosen), check `getPurchaseCost()` against available cash before committing, execute, then deduct from available cash tracked locally so the next candidate in the same pass sees an accurate remaining budget (don't re-query `getPlayer().money` every iteration — track it locally, re-sync only at the top of the next tick).
 5. **Report** — print portfolio value, net worth, per-symbol positions if useful. Optional, doesn't affect trading logic.
 6. **Sleep** until next tick.
+
+API surface (every `ns.stock` call needed, plus the `lib/stocks.js` helpers to write): [docs/stocks-api.md](../../../docs/stocks-api.md).

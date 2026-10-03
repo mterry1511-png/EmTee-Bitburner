@@ -1,17 +1,13 @@
 // ============================================================================
-// boostmaterials.js — WORK IN PROGRESS, and currently BROKEN. See below.
+// boostmaterials.js — WORK IN PROGRESS.
 //
 // Boost materials (Hardware, Robots, AI Cores, Real Estate) raise a division's
 // production multiplier. They are bought once and held, not consumed, so this
 // is a one-shot spend rather than a loop.
 //
-// BLOCKING BUG: `warehouse.sizedAt` on line ~36 is not a property of the
-// Warehouse object (the real one is `sizeUsed`). It evaluates to undefined,
-// which makes availableSpace NaN, which makes cappedBudget NaN, which makes
-// every downstream comparison false and every quantity NaN — so the purchase
-// loop reaches bulkPurchase() with a NaN quantity. This script cannot work as
-// written. Nothing here is a code change in this pass; it is documented so it
-// is not mistaken for working.
+// Known weaknesses (docs/review-findings.md): `currentRatio` isn't a true share
+// of the four materials, and warehouse space is converted to dollars via a flat
+// $1e6 fudge factor rather than each material's real per-unit size.
 //
 // Requires an active corporation (BitNode 3 or SF3).
 // ============================================================================
@@ -78,9 +74,7 @@ export async function main(ns) {
     };
 
     const warehouse = ns.corporation.getWarehouse(divisionName, city);
-    // BROKEN: `sizedAt` is not a Warehouse property (the real one is `sizeUsed`),
-    // so this is NaN and poisons every calculation downstream. See file header.
-    const availableSpace = warehouse.size - warehouse.sizedAt;
+    const availableSpace = warehouse.size - warehouse.sizeUsed;
     // Converts warehouse space into a dollar ceiling via a flat $1e6-per-unit
     // fudge factor, rather than using each material's real per-unit size from
     // ns.corporation.getMaterialData().

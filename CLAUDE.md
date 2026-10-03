@@ -3,36 +3,66 @@
 ## Purpose
 Matthew is building a modular Bitburner game automation system in JavaScript, using it as a vehicle for learning JS fundamentals alongside game progression. This is a learning project as much as a functional one — explanations of *why* matter as much as the fix itself.
 
-## Architecture / Core Files
-All game code lives under `servers/home/`. `docs/memory.md` used to hold this file's content before it was reformed into `CLAUDE.md`, and has since been deleted — all notes (current state, learnings, on-the-horizon items) belong in this file (or the directory-scoped `CLAUDE.md`s it links out to) going forward, not in `docs/`.
+## Where things live
+- **This file** — conventions, key learnings, and how the system works *now*. No to-do items, no history.
+- **[TODO.md](TODO.md)** — the single working list: every open work item, deferred idea and SF4-gated plan. Add new work items there, not here.
+- **[CHANGELOG.md](CHANGELOG.md)** — audit trail of completed changes, newest first, grouped by date.
+- **[docs/](docs/)** — design and reference docs too detailed for this file:
+  - [docs/scheduler-plan.md](docs/scheduler-plan.md) — the scheduler's authoritative design + implementation checklist.
+  - [docs/review-findings.md](docs/review-findings.md) — *transient* bug queue from the 2026-07-26 JSDoc pass. Work through it, then delete it, promoting anything durable into this file.
+  - [docs/stocks-api.md](docs/stocks-api.md) — `ns.stock` API surface for the stock market script.
+  - [docs/git-cheatsheet.md](docs/git-cheatsheet.md) — personal git reference.
+- **Directory-scoped `CLAUDE.md`s** — design notes for one area: [servers/home/cfg/CLAUDE.md](servers/home/cfg/CLAUDE.md) (cfg.json restructure, cfgview open question), [servers/home/stocks/CLAUDE.md](servers/home/stocks/CLAUDE.md) (stockmarket.js logic outline).
 
-- Build: esbuild + `bb-external-editor` (shyguy1412 template) for bidirectional Remote File API sync over WebSocket, port 12525.
+## Architecture
+All game code lives under `servers/home/`.
 
-## Current State
-- `init.js` resets `cfg.json` to defaults (`resetCfgToDefaults(ns)`, a new `lib/util.js` export) unconditionally, every run. The rest of the bootstrap (boot animation, network/cloud scan, autoNuke, daemon restart) stays gated behind post-aug-reset detection: compares `ns.getResetInfo().lastAugReset` against a stored value in `cfg.json`, written back via `jsonEdit` once the bootstrap runs so it doesn't re-fire on the next call.
-- **Fixed (2026-08-04):** `init.js` used to call `/cfg/cfgall.js "default"` for its unconditional reset, but that only resets the curated subset of fields `cfgall.js`'s interactive prompt flow covers — top-level booleans like `autobuyClouds`/`autobuyHacknet` and structural keys (`watchedScripts`, `deployToHome`, `gangCfg`) were never in that list, so they silently survived every "reset." If a prior session had left `autobuyClouds: true`, it stayed `true` after an aug reset even though the CLAUDE.md notes claimed an unconditional full reset. `lib/util.js`'s `resetCfgToDefaults(ns)` (the flatten-and-write-every-key logic `cfg/cfgdefaults.js` already had) is now shared by both `cfgdefaults.js` (still confirm-gated, for manual full resets) and `init.js` (no prompt, since it runs every launch by design) — `cfgall.js "default"` still exists for its original, narrower purpose (`cfg all default` on the CLI). Also fixed the crash this gap could surface: `cloud/buycloud.js`'s `minBuy()`/`buy()` fed `ns.cloud.purchaseServer()`'s return value straight into `ns.getServerMaxRam()` without checking for `""` (the documented failure signal for invalid args, insufficient money, or the max-cloud-servers cap) — `getServerMaxRam('')` then threw. Both now bail out and report the failure instead of crashing; `minBuy()` returns `null` on failure and `cloud/upgradeclouds.js`'s buy pass now breaks out of its loop on that instead of hot-looping a purchase that will only keep failing the same way.
-- `buyhacknetnodes.js` has a working `buyCheapest(ns)`.
-- HGW automation confirmed working with two config profiles (RAM-limited steps 1–3, RAM-abundant steps 4–6), using named profile objects + spread syntax in `go.js` to avoid duplication.
-- **Resolved:** `cfgall.js` is updated manually (code changes) whenever new keys are added to `cfg.json` — no auto-detecting/prompting for new keys at runtime. Bypassing the interactive flow via a `"default"` arg is still NOT wanted.
-- `lib/util.js` now exports `promptField(ns, field, current, defaultValue)` — the shared prompt/parse routine for every `cfg/*.js` editor. It picks `ns.prompt`'s `{ type: "boolean" }` UI for `field.type === "boolean"` fields (a real yes/no dialog) and `{ type: "text" }` for everything else, then parses per `field.type` (`"number"`, `"array"`, or plain text), returning `undefined` when the field should be left unchanged (cancelled, empty, or an invalid number). All five interactive `cfg/*.js` scripts (`cfgtoggle`, `cfghacknet`, `cfgall`, `cfgcloud`, `cfgtarget`) route through it now — previously each script had its own copy-pasted prompt loop, and several of them hardcoded `{ type: "text" }` even for boolean fields, which is why toggle prompts showed a text box instead of Yes/No buttons.
-- `lib/util.js` also exports `getByPath(obj, key)` — reads a dotted key path (`"purchaseConfig.maxPercSpend"`) out of any object. Used to look up both a field's live value from `cfg.json` and its canonical default from `defaultcfg.json` without duplicating the reducer inline in every script.
-- `cfg/cfgdefaults.js` built: full-reset-only (no per-key mode), confirms via the new `confirmAction(ns, message)` helper in `util.js`, reads `/data/defaultcfg.json`, and writes every key it finds there into `cfg.json` via `jsonEdit` (flattened to dot-notation first). Keys absent from `defaultcfg.json` — currently just `lastAugReset`, which is runtime state written by `init.js`, not user config — are left untouched by design. Wired into `cfg.js`'s autocomplete/switch as the `"defaults"` choice.
-- `confirmAction(ns, message)` extracted from `nukeclouds.js`'s inline confirm-then-act prompt into `util.js`; `nukeclouds.js` now uses it too. Any future destructive/irreversible action prompt should route through this instead of a bespoke `ns.prompt(..., { type: "boolean" })` + switch.
-- **Resolved:** the `default:` values hardcoded per-field in every `cfg/*.js` editor (`cfgtoggle`, `cfghacknet`, `cfgall`, `cfgcloud`, `cfgtarget`) are gone. Each editor now loads `/data/defaultcfg.json` once, looks up each field's default via `getByPath(defaults, field.key)`, and passes it into `promptField` for display — and the `useDefaults`/`"default"` arg branches in `cfgtoggle`/`cfghacknet`/`cfgall` reset via the same lookup instead of `field.default`. Since `defaultcfg.json` was seeded from `data/examplecfg.json` rather than any one script's old literals, the displayed/reset defaults for a few keys have changed from what they showed before this change (e.g. `autobuyHacknet` now shows/resets to `false` everywhere, not `true` as `cfghacknet.js`/`cfgtoggle.js` used to claim) — worth a once-over against `defaultcfg.json` to confirm the values are actually what's wanted, since they were previously silently inconsistent across scripts.
+- Build: esbuild + `bb-external-editor` (shyguy1412 template) for Remote File API sync over WebSocket, port 12525. Only `.js` and `.json` files under `servers/` are built and synced.
+- `init.js` — entry point after an aug reset. Resets `cfg.json` to defaults (`resetCfgToDefaults(ns)`) unconditionally, every run. The rest of the bootstrap (boot animation, network/cloud scan, autoNuke, daemon restart) only runs after an aug reset: it compares `ns.getResetInfo().lastAugReset` against the value stored in `cfg.json`, then writes the new value back via `jsonEdit` so it doesn't re-fire on the next run.
+- `daemon.js` — the long-running caretaker: refreshes the network map (unless `scheduler.js` is running), upgrades clouds, supervises watched scripts, buys hacknet nodes, auto-ascends gang members. See its header JSDoc.
+- HGW: `deployer.js` runs the hack/grow/weaken phases against one target, using thresholds from `cfg.json` (`moneyThresh` — a fraction of max money; `securityThresh` — an allowance above min security; `targetHackFraction`). `dispatch.js`/`dispatchall.js` launch deployers. All three will be superseded by the scheduler.
+- `go.js` — a numbered task launcher for frequent manual cloud chores (`run go.js [n]`; no arg prints the menu). Not part of the automated startup chain.
+- `watch/buyhacknetnodes.js` exports `buyCheapest(ns)`.
 
+### Config (`cfg.json`)
+- `data/defaultcfg.json` is the single source of truth for default values. `data/examplecfg.json` is a static example of `cfg.json`'s shape, safe to use as a structural reference while coding.
+- `cfg/cfgall.js` is updated manually (code changes) whenever new keys are added to `cfg.json` — no auto-detecting/prompting for new keys at runtime. A `"default"` arg on an editor skips the prompts and resets `cfg.json` to defaults (currently it resets only that editor's own fields; making it a full reset is in TODO.md).
+- `cfg/cfgdefaults.js` — full reset, confirm-gated. Writes every key in `defaultcfg.json` into `cfg.json`. Keys absent from `defaultcfg.json` (currently just `lastAugReset`, runtime state written by `init.js`) are left untouched by design. Wired into `cfg.js` as the `"defaults"` choice.
+- The five interactive editors (`cfgtoggle`, `cfghacknet`, `cfgall`, `cfgcloud`, `cfgtarget`) load `defaultcfg.json` once, look up each field's default via `getByPath`, and prompt through the shared `promptField`. None hardcodes default values.
+
+### Shared helpers in `lib/util.js`
+- `promptField(ns, field, current, defaultValue)` — the shared prompt/parse routine for every `cfg/*.js` editor. Boolean fields get a 3-choice select ("Yes" / "No" / "Skip (leave unchanged)"); `"select"` fields get their `choices`; everything else gets a text box parsed per `field.type` (`"number"`, `"array"`, or plain text). Returns `undefined` when the field should be left unchanged (skipped, cancelled, empty, or an invalid number).
+- `getByPath(obj, key)` — reads a dotted key path (`"purchaseConfig.maxPercSpend"`) out of any object.
+- `jsonEdit(ns, key, value, filepath)` — writes one dotted key into a JSON file. Does not create missing files.
+- `resetCfgToDefaults(ns)` — flattens `defaultcfg.json` and writes every key via `jsonEdit`. Used by both `init.js` (no prompt) and `cfgdefaults.js` (confirm-gated).
+- `confirmAction(ns, message)` — the confirm-then-act prompt. Every destructive/irreversible action should route through this instead of a bespoke `ns.prompt(..., { type: "boolean" })` + switch.
+- `ensureRunning(ns, script, host)` — used by `daemon.js` to supervise watched scripts (see below).
+
+### Watched scripts (daemon-supervised)
+Scripts listed in `cfg.watchedScripts` are kept running on every cloud server by `daemon.js`, which calls `ensureRunning()` per cloud per tick.
+- **Argument contract:** `ensureRunning` launches every watched script as `ns.exec(script, host, 1, host)` — the cloud's hostname is always `ns.args[0]`, and it's the only arg. New watched scripts must read their target cloud from `ns.args[0]`. Supporting more args needs `ensureRunning` extended. `daemon.js`'s `atExit` kill also depends on this exact arg list, since `ns.kill` by filename matches args exactly.
+- **Placement:** scripts live on home. `cloudpush.js` copies home scripts to clouds, so don't add `scp` logic to `ensureRunning` or `daemon.js`. (`cloudpush.js` itself is the exception — `ensureRunning` scps it, since it can't push itself.)
+- **Behaviour:** watched scripts run on the cloud, are self-contained loops with their own sleep, read `cfg.json` directly if they need config, and get re-exec'd on the next tick if they exit or crash.
+- **Adding one:** write it with `ns.args[0]` as the cloud name, add the filename to `watchedScripts`. Nothing else.
+
+## Scheduler (in progress)
+Replaces `dispatch.js` entirely. A centralized daemon that owns all `ns.exec` calls for scheduled work — callers request threads via ports, the scheduler allocates and launches directly, never handing thread counts back to the caller to exec themselves (this is what prevents the RAM-consumed-between-check-and-launch race). Full design: [docs/scheduler-plan.md](docs/scheduler-plan.md).
 
 ## Key Learnings (Bitburner/JS specifics — don't re-explain these from scratch)
 - `ns.run()` returns a PID synchronously and does NOT block; poll `ns.isRunning(pid)` to wait.
 - `ns.scp` preserves source paths, no rename option; `ns.isRunning` must use the exact exec'd path.
 - After any script writes `cfg.json` (`jsonEdit`, `resetCfgToDefaults`, `cfgall.js`, etc.), any in-memory `cfg` object is stale — re-read from disk.
-- `ns.ls` is per-host, not network-wide; second arg is a plain substring, not a glob.
+- `ns.ls` is per-host, not network-wide; second arg is a plain substring, not a glob (so `".js"` also matches `".json"`).
 - Bitburner's terminal is a custom parser — Unix idioms (`rm -rf *`) don't work; use the Netscript API.
 - `ns.kill(filename, host, ...args)` needs exact argument matching or it silently fails; prefer PID-based killing via `ns.ps()`.
 - Terminal boolean args are always strings — use `String(ns.args[n] ?? false).toLowerCase() === "true"`.
 - `const` inside `switch` cases needs `{}` per-case to avoid redeclaration errors.
 - `ns.hacknet.*` needs no SF4 gate — fully available without Singularity.
-- `cfg.json` is game-owned; treat as read-only in VS Code to avoid Remote API overwriting in-game changes. It's not even readable from VS Code — only from the game client. `data/examplecfg.json` is a static, non-live example of its shape and can be used as a true structural reference while coding.
-- `ns.prompt(message, options)`'s `options.type` controls the dialog UI, not just validation — `"boolean"` renders Yes/No buttons and resolves to a real `boolean`; `"text"` always renders a text box (and resolves to a string, or `false` if cancelled) even if you intend the input to represent a boolean/number. Match `type` to the field's actual data type instead of defaulting to `"text"` everywhere.
+- `cfg.json` is game-owned and not readable from VS Code — only from the game client. Changes to it have to happen by running a script in-game.
+- `ns.prompt(message, options)`'s `options.type` controls the dialog UI, not just validation: `"boolean"` renders Yes/No buttons and resolves to a real `boolean`; `"text"` always renders a text box and resolves to a string. **But a dismissed `"boolean"` dialog resolves to `false`, indistinguishable from "No"** — so when "leave unchanged" must be expressible, use a `"select"` with an explicit skip choice (what `promptField` does).
+- `ns.cloud.purchaseServer()` returns `""` on failure (invalid args, insufficient money, or the max-cloud-servers cap) — check for it before using the return value as a hostname.
+- `ns.sleep()` counts as a pending Netscript call: racing it with another promise (e.g. `Promise.race([port.nextWrite(), ns.sleep(ms)])`) and then calling an ns function while it's still pending throws a concurrent-call error. Use `ns.asleep()` for races.
+- `ns.exec` returns `0` on failure, which looks like success unless checked.
 
 ## Working Style / Preferences (apply these without being asked)
 - **Correct inaccurate terminology, nonconventional usage, and convention violations directly and without hedging.** Explain the reasoning so it generalizes — don't just patch the instance.
@@ -42,6 +72,7 @@ All game code lives under `servers/home/`. `docs/memory.md` used to hold this fi
 - Design decisions get reasoned through conversationally before code is written; review code before moving to the next stage.
 - Prefer complete corrected files over isolated snippets where practical.
 - Be open to explaining *how* an answer was reached, not just delivering it.
+- **Keep the audit trail current:** whenever a change is completed (code fix, feature, doc restructure), add it to `CHANGELOG.md` under today's date — what changed and why, plus anything deliberately left as-is — and tick or remove the matching `TODO.md` item. Do this in the same session as the change, without being asked.
 - When a fix generalizes across multiple similar files (e.g. one bug pattern copy-pasted into several scripts), fix it once via a shared helper and apply it everywhere, rather than patching only the file that was asked about.
 
 ## Coding Conventions to Enforce
@@ -57,28 +88,6 @@ All game code lives under `servers/home/`. `docs/memory.md` used to hold this fi
 
 ## Tools & Environment
 - VS Code + esbuild + `bb-external-editor` for sync; GitHub Desktop for version control.
+- Repo checkout lives in WSL at `/home/matto/projects/EmTee-Bitburner`. Line endings are LF, enforced by `.gitattributes`.
 - JSDoc + `NetscriptDefinitions.d.ts` for autocomplete; `"ignoreDeprecations": "6.0"` in `tsconfig.json`.
 - `NetscriptDefinitions.d.ts` is the authoritative source for API signatures — check it over assumption.
-- Filesystem MCP is available at `C:\!Coding\BitBurner\Projects\bb-external-editor-main\servers\home\`.
-
-## Scheduler (in progress)
-Replaces `dispatch.js` entirely. A centralized daemon that owns all `ns.exec` calls for scheduled work — callers request threads via ports, the scheduler allocates and launches directly, never handing thread counts back to the caller to exec themselves (this is what prevents the RAM-consumed-between-check-and-launch race). Full design and implementation plan (ports, allocation algorithm, counters, filler processes, failure logging, file structure, checklist) lives in [docs/scheduler-plan.md](docs/scheduler-plan.md) — a deliberate, permanent exception to the "notes belong in CLAUDE.md" rule (see that file's header note), since `servers/home/scheduler/CLAUDE.md` drifted stale and was deleted in favor of it.
-
-## On the Horizon
-- ~~Dispatch v2: kill all existing deployers, sort cloud servers by available RAM, assign ranked targets by index zipping.~~ Superseded by the scheduler above.
-- Normal/non-priority request queue for the scheduler — deferred until priority-only is working.
-- Extract the confirm-then-act prompt pattern from the file-removal script into `confirmAction` as well (already done for `nukeclouds.js`).
-- Add home RAM upgrade support to cloud watcher once Singularity (SF4) is unlocked.
-
-Planned work on the cfg.json restructure lives in [servers/home/cfg/CLAUDE.md](servers/home/cfg/CLAUDE.md); the stockmarket.js logic outline lives in [servers/home/stocks/CLAUDE.md](servers/home/stocks/CLAUDE.md); the scheduler design and implementation plan (and the not-yet-designed Batcher that builds on it) lives in [docs/scheduler-plan.md](docs/scheduler-plan.md).
-
-[docs/review-findings.md](docs/review-findings.md) holds the code issues turned up by the project-wide JSDoc/comment pass — bugs, shadowed variables, dead code, DRY violations and leftover build artifacts that were logged but deliberately *not* fixed, since that pass was comments-only. **This is a transient work queue, not project state** — it's a deliberate exception to the "notes belong in CLAUDE.md, not `docs/`" rule above, made because 45 files' worth of findings would bury this file. Work through it, then delete it; anything worth keeping gets promoted into CLAUDE.md proper rather than living on in `docs/`.
-
-**Priority actions from the JSDoc pass (2026-07-26):**
-1. ~~Fix four confirmed bugs~~ **Done (2026-08-01):**
-   - `deployer.js` — WEAKEN now gets its own live recompute branch (symmetric with GROW/HACK), so its `queue` actually reaches zero instead of leaving the deployer stuck weakening forever and burning RAM on no-op weakens.
-   - `init.js` — `jsonEdit(ns, "lastAugReset", ...)` is now called once the post-reset bootstrap runs, so it doesn't re-fire every launch. Separately, `cfg.json` is now reset to defaults on *every* `init.js` run regardless of aug-reset status (a deliberate behavior change, not part of the original bug fix) — see Current State above.
-   - `scanner.js` — BFS now marks `visited` on enqueue, not dequeue, so `networks.json`/`rooted.json` can no longer contain duplicate hostnames.
-   - `lib/util.js` — `promptField` now renders boolean fields as a 3-choice select ("Yes"/"No"/"Skip") instead of a plain boolean dialog, since a cancelled boolean prompt resolved to `false` indistinguishably from a real "No" — that's what made backing out of `cfgtoggle` partway turn every remaining switch off.
-2. ~~Verify ~80 other findings~~ **Verification done (2026-08-07):** a read-only agent re-checked every remaining REPORTED item in `docs/review-findings.md` against current code — 78 CONFIRMED, 4 STALE (no longer apply, annotated in place), 0 false-positives, 3 AMBIGUOUS (need a judgment call or in-game test, not more reading). Findings are annotated in the doc; **acting on them is still outstanding** — user explicitly deferred choosing a scope on 2026-08-07. Next session should pick one before starting fixes: crash/hang-risks only (`stocks/stockmarket.js`, `cloud/upgradeclouds.js` infinite-loop, `corp/boostmaterials.js` NaN poisoning), that plus silent data corruption (`cloud/renamecloud.js`, `killall.js`), or the full list.
-3. **Update line 14** — `go.js` no longer holds the two HGW config profiles; it's now a numbered task launcher, and thresholds moved to `cfg.json` consumed by `deployer.js`.

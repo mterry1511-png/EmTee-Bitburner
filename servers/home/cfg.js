@@ -1,14 +1,15 @@
 
+/** The cfg categories accepted as ns.args[0] - keep in sync with the switch in main(). */
+const categories = ["all", "clouds", "hacknet", "hacking", "gang", "toggle", "view", "defaults"];
+
 /**
  * Supplies the terminal's tab-completion list for this script.
- * The returned strings are the cfg categories accepted as ns.args[0] below —
- * keep this array and the switch in main() in sync when a new editor is added.
  * @param {{servers: string[], txts: string[], scripts: string[], flags: Function}} data - Context about the game, useful when autocompleting
  * @param {string[]} args - The arguments already typed on the terminal line
  * @returns {string[]} The array of possible autocomplete options
  */
 export function autocomplete(data, args) {
-  return ["all", "clouds", "hacknet", "hacking", "gang", "toggle", "view", "defaults"];
+  return categories;
 }
 
 
@@ -29,7 +30,7 @@ export async function main(ns) {
     if (!choice) {
         choice = await ns.prompt("Select the cfg category", {
             type: "select",
-            choices: ["all", "clouds", "hacknet", "hacking", "gang", "toggle", "view", "defaults"]
+            choices: categories
         });
     }
 
@@ -60,6 +61,12 @@ export async function main(ns) {
         case "defaults":
             script = "cfg/cfgdefaults.js";
             break;
+        default:
+            // Cancelled prompt (no choice) or an unrecognised argument - nothing to run.
+            if (choice) {
+                ns.tprint(`Unknown cfg category "${choice}". Valid: ${categories.join(", ")}`);
+            }
+            return;
     }
 
     // Fire-and-forget: the editor script owns its own prompt loop from here,
